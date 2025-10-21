@@ -1,3 +1,4 @@
+export const runtime = "nodejs";  // ← 추가
 import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
@@ -17,23 +18,40 @@ const hasEmailProviderConfig =
   process.env.EMAIL_FROM
 
 if (hasEmailProviderConfig) {
-  const emailServerPort = Number(process.env.EMAIL_SERVER_PORT)
+  // const emailServerPort = Number(process.env.EMAIL_SERVER_PORT)
 
-  if (Number.isFinite(emailServerPort)) {
+  const ENABLE_EMAIL = process.env.ENABLE_EMAIL === "1";
+
+  if (ENABLE_EMAIL) {
     providers.push(
       EmailProvider({
         server: {
-          host: process.env.EMAIL_SERVER_HOST,
-          port: emailServerPort,
+          host: process.env.EMAIL_SERVER_HOST!,
+          port: Number(process.env.EMAIL_SERVER_PORT!),
           auth: {
-            user: process.env.EMAIL_SERVER_USER,
-            pass: process.env.EMAIL_SERVER_PASSWORD,
+            user: process.env.EMAIL_SERVER_USER!,
+            pass: process.env.EMAIL_SERVER_PASSWORD!,
           },
         },
-        from: process.env.EMAIL_FROM,
+        from: process.env.EMAIL_FROM!,
       })
-    )
+    );
   }
+  // if (Number.isFinite(emailServerPort)) {
+  //   providers.push(
+  //     EmailProvider({
+  //       server: {
+  //         host: process.env.EMAIL_SERVER_HOST,
+  //         port: emailServerPort,
+  //         auth: {
+  //           user: process.env.EMAIL_SERVER_USER,
+  //           pass: process.env.EMAIL_SERVER_PASSWORD,
+  //         },
+  //       },
+  //       from: process.env.EMAIL_FROM,
+  //     })
+  //   )
+  // }
 }
 
 export const authOptions: NextAuthOptions = {
