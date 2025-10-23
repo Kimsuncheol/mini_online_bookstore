@@ -7,113 +7,105 @@ import {
   Grid,
   Skeleton,
   Stack,
+  alpha,
 } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 
 export default function BookDetailSkeleton() {
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Breadcrumb */}
-      <Box sx={{ mb: 4 }}>
-        <Skeleton width={300} height={24} />
-      </Box>
+    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 4 }}>
+        <Skeleton width={64} height={20} />
+        <Skeleton width={12} height={20} />
+        <Skeleton width={64} height={20} />
+        <Skeleton width={12} height={20} />
+        <Skeleton width={180} height={20} />
+      </Stack>
 
-      {/* Main Content Grid */}
-      <Grid container spacing={4}>
-        {/* Book Image Skeleton */}
+      <Grid container spacing={{ xs: 4, md: 6 }}>
         <Grid item xs={12} md={5}>
           <Box
             sx={{
               position: 'sticky',
-              top: 80,
-              width: '100%',
-              backgroundColor: alpha('#667eea', 0.05),
-              borderRadius: 2,
-              p: 3,
+              top: 96,
+              borderRadius: 4,
+              p: 4,
+              background: 'linear-gradient(135deg, rgba(148,163,184,0.12), rgba(226,232,240,0.3))',
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'center',
-              minHeight: 500,
             }}
           >
             <Skeleton
               variant="rectangular"
-              width={300}
-              height={400}
-              sx={{ borderRadius: 2 }}
+              width={320}
+              height={420}
+              sx={{ borderRadius: 3 }}
             />
           </Box>
         </Grid>
 
-        {/* Book Details Skeleton */}
         <Grid item xs={12} md={7}>
-          <Stack spacing={3}>
-            {/* Genre Chip */}
-            <Skeleton width={100} height={40} variant="rounded" />
-
-            {/* Title */}
-            <Stack spacing={1}>
-              <Skeleton width="80%" height={40} />
-              <Skeleton width="60%" height={28} />
+          <Stack spacing={4}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1.5}>
+                <Skeleton variant="rounded" width={100} height={32} />
+                <Skeleton variant="rounded" width={100} height={32} />
+              </Stack>
+              <Skeleton width="90%" height={44} />
+              <Skeleton width="50%" height={28} />
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Skeleton variant="rounded" width={160} height={24} />
+                <Skeleton width={140} height={20} />
+              </Stack>
             </Stack>
 
-            {/* Rating */}
-            <Stack direction="row" spacing={2}>
-              <Skeleton width={150} height={24} variant="rounded" />
-              <Skeleton width={120} height={24} />
-            </Stack>
+            <Box sx={{ height: 1, backgroundColor: alpha('#0f172a', 0.08) }} />
 
-            {/* Divider */}
-            <Box sx={{ height: 1, backgroundColor: 'divider' }} />
-
-            {/* Price */}
-            <Stack direction="row" spacing={2}>
-              <Skeleton width={120} height={32} />
-              <Skeleton width={100} height={32} />
-            </Stack>
-
-            {/* Description */}
-            <Stack spacing={1}>
-              <Skeleton width={120} height={24} />
+            <Stack spacing={1.5}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Skeleton width={140} height={40} />
+                <Skeleton variant="rounded" width={120} height={24} />
+                <Skeleton variant="rounded" width={110} height={24} />
+              </Stack>
               <Skeleton width="100%" height={20} />
-              <Skeleton width="100%" height={20} />
+              <Skeleton width="95%" height={20} />
               <Skeleton width="80%" height={20} />
             </Stack>
 
-            {/* Book Info */}
-            <Stack spacing={1}>
-              <Skeleton width="100%" height={24} />
-              <Skeleton width="100%" height={24} />
-              <Skeleton width="100%" height={24} />
-              <Skeleton width="100%" height={24} />
+            <Box sx={{ height: 1, backgroundColor: alpha('#0f172a', 0.08) }} />
+
+            <Stack spacing={1.5}>
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Stack direction="row" spacing={2} key={index}>
+                  <Skeleton width={120} height={20} />
+                  <Skeleton width="50%" height={20} />
+                </Stack>
+              ))}
             </Stack>
 
-            {/* Divider */}
-            <Box sx={{ height: 1, backgroundColor: 'divider' }} />
+            <Box sx={{ height: 1, backgroundColor: alpha('#0f172a', 0.08) }} />
 
-            {/* Stock Status */}
-            <Skeleton width={200} height={40} variant="rounded" />
-
-            {/* Quantity Selector */}
-            <Stack spacing={1}>
-              <Skeleton width={100} height={24} />
-              <Skeleton width={100} height={40} variant="rounded" />
-            </Stack>
-
-            {/* Action Buttons */}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Skeleton variant="rounded" width="100%" height={48} />
-              <Skeleton variant="rounded" width={150} height={48} />
-            </Stack>
-
-            {/* Divider */}
-            <Box sx={{ height: 1, backgroundColor: 'divider' }} />
-
-            {/* Shipping & Return Info */}
             <Stack spacing={2}>
-              <Skeleton width="100%" height={60} variant="rounded" />
-              <Skeleton width="100%" height={60} variant="rounded" />
-              <Skeleton width="100%" height={60} variant="rounded" />
+              <Skeleton variant="rounded" width={200} height={32} />
+              <Skeleton width={100} height={20} />
+              <Skeleton variant="rounded" width={120} height={44} />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Skeleton variant="rounded" width="100%" height={52} />
+                <Skeleton variant="rounded" width="100%" height={52} />
+              </Stack>
+            </Stack>
+
+            <Box sx={{ height: 1, backgroundColor: alpha('#0f172a', 0.08) }} />
+
+            <Stack spacing={2}>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Stack key={index} direction="row" spacing={2} alignItems="flex-start">
+                  <Skeleton variant="circular" width={36} height={36} />
+                  <Stack spacing={1}>
+                    <Skeleton width={160} height={20} />
+                    <Skeleton width={220} height={16} />
+                  </Stack>
+                </Stack>
+              ))}
             </Stack>
           </Stack>
         </Grid>

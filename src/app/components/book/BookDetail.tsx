@@ -2,17 +2,17 @@
 
 import React, { useState } from 'react'
 import {
+  Alert,
   Box,
   Button,
+  Chip,
   Container,
+  Divider,
   Grid,
   Rating,
   Stack,
-  Typography,
-  Chip,
-  Divider,
   TextField,
-  Alert,
+  Typography,
   alpha,
 } from '@mui/material'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
@@ -29,6 +29,14 @@ interface BookDetailProps {
   book: Book
 }
 
+const metaItems: Array<{ key: keyof Book; label: string }> = [
+  { key: 'author', label: 'Author' },
+  { key: 'publisher', label: 'Publisher' },
+  { key: 'language', label: 'Language' },
+  { key: 'pageCount', label: 'Page count' },
+  { key: 'isbn', label: 'ISBN' },
+]
+
 export default function BookDetail({ book }: BookDetailProps) {
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
@@ -37,7 +45,7 @@ export default function BookDetail({ book }: BookDetailProps) {
 
   const handleQuantityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10)
-    if (!isNaN(value) && value > 0 && value <= book.stockQuantity) {
+    if (!Number.isNaN(value) && value > 0 && value <= (book.stockQuantity || 1)) {
       setQuantity(value)
     }
   }
@@ -55,69 +63,59 @@ export default function BookDetail({ book }: BookDetailProps) {
   }
 
   const handleToggleFavorite = () => {
-    setIsFavorite(!isFavorite)
+    setIsFavorite((prev) => !prev)
   }
 
   const discountPercentage = book.originalPrice
     ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
     : book.discount || 0
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Breadcrumb */}
-      <Box sx={{ mb: 4 }}>
-        <Link href="/" style={{ color: '#667eea', textDecoration: 'none' }}>
-          <Typography variant="body2" sx={{ '&:hover': { textDecoration: 'underline' } }}>
-            Home
-          </Typography>
-        </Link>
-        <Typography variant="body2" sx={{ display: 'inline', mx: 1, color: 'text.secondary' }}>
-          /
-        </Typography>
-        <Link href="/books" style={{ color: '#667eea', textDecoration: 'none' }}>
-          <Typography variant="body2" sx={{ display: 'inline', '&:hover': { textDecoration: 'underline' } }}>
-            Books
-          </Typography>
-        </Link>
-        <Typography variant="body2" sx={{ display: 'inline', mx: 1, color: 'text.secondary' }}>
-          /
-        </Typography>
-        <Typography variant="body2" sx={{ display: 'inline' }}>
-          {book.title}
-        </Typography>
-      </Box>
+  const formatMetaValue = (value: Book[keyof Book]) => {
+    if (!value) return '-'
+    if (value instanceof Date) {
+      return value.toLocaleDateString()
+    }
+    return value.toString()
+  }
 
-      {/* Main Content Grid */}
-      <Grid container spacing={4}>
-        {/* Book Image */}
+  return (
+    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 4, color: 'text.secondary', fontSize: 14 }}>
+        <Link href="/" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <Typography sx={{ '&:hover': { color: 'primary.main' } }}>Home</Typography>
+        </Link>
+        <Typography>/</Typography>
+        <Link href="/books" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <Typography sx={{ '&:hover': { color: 'primary.main' } }}>Books</Typography>
+        </Link>
+        <Typography>/</Typography>
+        <Typography sx={{ color: 'text.primary' }}>{book.title}</Typography>
+      </Stack>
+
+      <Grid container spacing={{ xs: 4, md: 6 }}>
         <Grid item xs={12} md={5}>
           <Box
             sx={{
               position: 'sticky',
-              top: 80,
-              width: '100%',
-              backgroundColor: alpha('#667eea', 0.05),
-              borderRadius: 2,
-              p: 3,
+              top: 96,
+              borderRadius: 4,
+              p: 4,
+              background: 'linear-gradient(135deg, rgba(148,163,184,0.12), rgba(226,232,240,0.3))',
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'center',
-              minHeight: 500,
-              overflow: 'hidden',
+              alignItems: 'center',
             }}
           >
             <Box
               sx={{
                 width: '100%',
-                maxWidth: 300,
+                maxWidth: 320,
                 aspectRatio: '3/4',
-                backgroundColor: '#f5f5f5',
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                borderRadius: 3,
+                overflow: 'hidden',
                 border: '1px solid',
                 borderColor: 'divider',
+                backgroundColor: alpha('#0f172a', 0.05),
               }}
             >
               {book.coverImageUrl ? (
@@ -125,282 +123,236 @@ export default function BookDetail({ book }: BookDetailProps) {
                   component="img"
                   src={book.coverImageUrl}
                   alt={book.title}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: 1,
-                  }}
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                <Typography variant="caption" color="textSecondary">
-                  No Cover Image
-                </Typography>
+                <Stack height="100%" alignItems="center" justifyContent="center">
+                  <Typography variant="body2" color="text.secondary">
+                    Cover unavailable
+                  </Typography>
+                </Stack>
               )}
             </Box>
-
-            {/* Discount Badge */}
-            {discountPercentage > 0 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 20,
-                  right: 20,
-                  backgroundColor: '#ff6b6b',
-                  color: 'white',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                }}
-              >
-                -{discountPercentage}%
-              </Box>
-            )}
           </Box>
         </Grid>
 
-        {/* Book Details */}
         <Grid item xs={12} md={7}>
-          <Stack spacing={3}>
-            {/* Genre Chip */}
-            <Box>
-              <Chip
-                label={book.genre}
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  fontWeight: 600,
-                }}
-              />
-            </Box>
-
-            {/* Title and Author */}
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                {book.title}
-              </Typography>
-              <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400 }}>
-                by {book.author}
-              </Typography>
-            </Box>
-
-            {/* Rating */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Rating
-                value={book.rating || 0}
-                readOnly
-                precision={0.5}
-              />
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                ({book.reviewCount || 0} reviews)
-              </Typography>
-            </Box>
-
-            <Divider />
-
-            {/* Price Section */}
-            <Box>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'primary.main',
-                  }}
-                >
-                  ${book.price.toFixed(2)}
-                </Typography>
-                {book.originalPrice && book.originalPrice > book.price && (
-                  <Typography
-                    variant="body1"
+          <Stack spacing={4}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                {book.genre && (
+                  <Chip
+                    label={book.genre}
+                    color="primary"
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+                {book.isFeatured && (
+                  <Chip
+                    label="Featured"
                     sx={{
-                      textDecoration: 'line-through',
-                      color: 'text.disabled',
+                      fontWeight: 600,
+                      backgroundColor: alpha('#f59e0b', 0.15),
+                      color: '#b45309',
                     }}
-                  >
-                    ${book.originalPrice.toFixed(2)}
-                  </Typography>
+                  />
+                )}
+                {book.isNew && (
+                  <Chip
+                    label="New"
+                    sx={{
+                      fontWeight: 600,
+                      backgroundColor: alpha('#38bdf8', 0.18),
+                      color: '#0ea5e9',
+                    }}
+                  />
                 )}
               </Stack>
-            </Box>
 
-            {/* Description */}
-            {book.description && (
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Description
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
-                  {book.description}
-                </Typography>
-              </Box>
-            )}
+              <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+                {book.title}
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                {book.author}
+              </Typography>
 
-            {/* Book Info */}
-            <Stack spacing={1}>
-              {book.publisher && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              {book.rating && (
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Rating value={book.rating} precision={0.5} readOnly />
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Publisher:
+                    {book.rating.toFixed(1)} · {book.reviewCount || 0} reviews
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {book.publisher}
-                  </Typography>
-                </Box>
-              )}
-              {book.pageCount && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Pages:
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {book.pageCount}
-                  </Typography>
-                </Box>
-              )}
-              {book.language && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Language:
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {book.language}
-                  </Typography>
-                </Box>
-              )}
-              {book.publishedDate && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Published:
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {new Date(book.publishedDate).toLocaleDateString()}
-                  </Typography>
-                </Box>
+                </Stack>
               )}
             </Stack>
 
             <Divider />
 
-            {/* Stock Status */}
-            <Box>
-              {book.inStock ? (
-                <Chip
-                  label={`In Stock (${book.stockQuantity} available)`}
-                  color="success"
-                  variant="outlined"
-                />
-              ) : (
-                <Chip
-                  label="Out of Stock"
-                  color="error"
-                  variant="outlined"
-                />
-              )}
-            </Box>
-
-            {/* Quantity Selector */}
-            {book.inStock && (
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Quantity
-                </Typography>
-                <TextField
-                  type="number"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  inputProps={{
-                    min: 1,
-                    max: book.stockQuantity,
-                  }}
-                  size="small"
-                  sx={{ width: 100 }}
-                />
-              </Box>
-            )}
-
-            {/* Add to Cart Alert */}
-            {addedToCart && (
-              <Alert severity="success">
-                Added to cart successfully!
-              </Alert>
-            )}
-
-            {/* Action Buttons */}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button
-                variant="contained"
-                fullWidth
-                startIcon={<ShoppingCartIcon />}
-                onClick={handleAddToCart}
-                disabled={!book.inStock}
-                sx={{
-                  py: 1.5,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                  },
-                }}
-              >
-                Add to Cart
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                onClick={handleToggleFavorite}
-                sx={{
-                  py: 1.5,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  color: isFavorite ? 'error.main' : 'text.primary',
-                  borderColor: isFavorite ? 'error.main' : 'divider',
-                }}
-              >
-                {isFavorite ? 'Liked' : 'Like'}
-              </Button>
-            </Stack>
-
-            <Divider />
-
-            {/* Shipping & Return Info */}
             <Stack spacing={2}>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                <LocalShippingIcon sx={{ color: 'primary.main', mt: 0.5 }} />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                  ${book.price.toFixed(2)}
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {book.originalPrice && book.originalPrice > book.price && (
+                    <Typography
+                      variant="body1"
+                      sx={{ textDecoration: 'line-through', color: 'text.disabled' }}
+                    >
+                      ${book.originalPrice.toFixed(2)}
+                    </Typography>
+                  )}
+                  {discountPercentage > 0 && (
+                    <Chip label={`Save ${discountPercentage}%`} color="error" sx={{ fontWeight: 600 }} />
+                  )}
+                </Stack>
+              </Stack>
+
+              <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.7 }}>
+                {book.description}
+              </Typography>
+            </Stack>
+
+            <Divider />
+
+            <Stack spacing={1.5}>
+              {metaItems.map(({ key, label }) => {
+                const value = formatMetaValue(book[key])
+                if (!value || value === '-') {
+                  return null
+                }
+                return (
+                  <Stack key={key as string} direction="row" spacing={2}>
+                    <Typography
+                      variant="body2"
+                      sx={{ minWidth: 120, color: 'text.secondary', fontWeight: 600 }}
+                    >
+                      {label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                      {value}
+                    </Typography>
+                  </Stack>
+                )
+              })}
+            </Stack>
+
+            <Divider />
+
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {book.inStock ? (
+                  <Chip
+                    label={`In Stock · ${book.stockQuantity} left`}
+                    color="success"
+                    variant="outlined"
+                  />
+                ) : (
+                  <Chip label="Out of Stock" color="error" variant="outlined" />
+                )}
+                {book.publishedDate && (
+                  <Chip
+                    label={`Published ${book.publishedDate.toLocaleDateString()}`}
+                    variant="outlined"
+                    sx={{ color: 'text.secondary' }}
+                  />
+                )}
+              </Stack>
+
+              {book.inStock && (
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Free Shipping
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                    Quantity
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    On orders over $50
-                  </Typography>
+                  <TextField
+                    type="number"
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                    inputProps={{ min: 1, max: book.stockQuantity }}
+                    size="small"
+                    sx={{ width: 120 }}
+                  />
                 </Box>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                <RestartAltIcon sx={{ color: 'primary.main', mt: 0.5 }} />
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Easy Returns
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    30-day return policy
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                <SecurityIcon sx={{ color: 'primary.main', mt: 0.5 }} />
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Secure Checkout
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    SSL encrypted transactions
-                  </Typography>
-                </Box>
-              </Box>
+              )}
+
+              {addedToCart && <Alert severity="success">Added to cart successfully!</Alert>}
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<ShoppingCartIcon />}
+                  onClick={handleAddToCart}
+                  disabled={!book.inStock}
+                  sx={{
+                    py: 1.5,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: 3,
+                  }}
+                >
+                  Add to Cart
+                </Button>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                  onClick={handleToggleFavorite}
+                  sx={{
+                    py: 1.5,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: 3,
+                    color: isFavorite ? 'error.main' : 'text.primary',
+                    borderColor: isFavorite ? 'error.main' : 'divider',
+                  }}
+                >
+                  {isFavorite ? 'Liked' : 'Like'}
+                </Button>
+              </Stack>
+            </Stack>
+
+            <Divider />
+
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={3} flexWrap="wrap">
+                <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ minWidth: 220 }}>
+                  <LocalShippingIcon sx={{ color: 'primary.main', mt: 0.5 }} />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Free Shipping
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Complimentary delivery on orders over $50.
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ minWidth: 220 }}>
+                  <RestartAltIcon sx={{ color: 'primary.main', mt: 0.5 }} />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Easy Returns
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      30-day hassle-free return policy.
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ minWidth: 220 }}>
+                  <SecurityIcon sx={{ color: 'primary.main', mt: 0.5 }} />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Secure Checkout
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      SSL encrypted payment for peace of mind.
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Stack>
             </Stack>
           </Stack>
         </Grid>
