@@ -1,5 +1,3 @@
-'use client'
-
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
@@ -23,5 +21,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize analytics only on client side
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+// export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 export const auth = getAuth(app);
