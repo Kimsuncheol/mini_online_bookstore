@@ -6,31 +6,29 @@ import {
   Toolbar,
   TextField,
   Button,
-  Avatar,
   Box,
   InputAdornment,
   alpha,
+  Avatar,
+  IconButton,
   Menu,
   MenuItem,
-  ListItemIcon,
-  Typography
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
+import LogoutIcon from '@mui/icons-material/Logout'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import SignIn from '../Auth/SignIn'
 import SignUp from '../Auth/SignUp'
-import LogoutIcon from '@mui/icons-material/Logout'
-import PersonIcon from '@mui/icons-material/Person'
 
 export default function Header() {
-  const { data: session } = useSession()
   const [signInOpen, setSignInOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { user, logout } = useAuth()
 
-  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
   }
 
@@ -38,9 +36,23 @@ export default function Header() {
     setAnchorEl(null)
   }
 
-  const handleSignOut = async () => {
-    handleMenuClose()
-    await signOut({ callbackUrl: '/' })
+  const handleLogout = async () => {
+    try {
+      await logout()
+      handleMenuClose()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
+  const getInitials = (name?: string | null): string => {
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -110,89 +122,80 @@ export default function Header() {
               }}
             />
 
-            {/* Modern Auth button or Avatar */}
-            {!session ? (
-              <Button
-                variant="contained"
-                onClick={() => setSignInOpen(true)}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 2.5,
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                    boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
-                  }
-                }}
-              >
-                Sign In
-              </Button>
+            {/* Auth Button or User Menu */}
+            {user ? (
+              <>
+                <IconButton
+                  onClick={handleMenuOpen}
+                  sx={{
+                    p: 0,
+                    '&:hover': {
+                      backgroundColor: alpha('#667eea', 0.1),
+                    },
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {getInitials(user.displayName)}
+                  </Avatar>
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                >
+                  <MenuItem disabled>
+                    <Box sx={{ fontSize: '0.875rem' }}>
+                      {user.displayName || user.email}
+                    </Box>
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                    <LogoutIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                    Logout
+                  </MenuItem>
+                </Menu>
+              </>
             ) : (
-              <Avatar
-                onClick={handleAvatarClick}
-                sx={{
-                  width: 40,
-                  height: 40,
-                  cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                  fontWeight: 600,
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'scale(1.1)',
-                    boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
-                  }
-                }}
-              >
-                {session.user?.name?.[0] || session.user?.email?.[0] || 'U'}
-              </Avatar>
+                <Button
+                  variant="contained"
+                  onClick={() => setSignInOpen(true)}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 2.5,
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                      boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
+                    },
+                  }}
+                >
+                  Sign In
+                </Button>
             )}
-
-            {/* User Menu */}
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              slotProps={{
-                paper: {
-                  sx: {
-                    mt: 1.5,
-                    minWidth: 200,
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                  }
-                }
-              }}
-            >
-              <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="body2" fontWeight={600}>
-                  {session?.user?.name || 'User'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {session?.user?.email}
-                </Typography>
-              </Box>
-              <MenuItem onClick={handleMenuClose} sx={{ py: 1.5 }}>
-                <ListItemIcon>
-                  <PersonIcon fontSize="small" />
-                </ListItemIcon>
-                Profile
-              </MenuItem>
-              <MenuItem onClick={handleSignOut} sx={{ py: 1.5 }}>
-                <ListItemIcon>
-                  <LogoutIcon fontSize="small" />
-                </ListItemIcon>
-                Sign Out
-              </MenuItem>
-            </Menu>
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Auth Modals */}
+      {/* Sign In Modal */}
       <SignIn
         open={signInOpen}
         onClose={() => setSignInOpen(false)}
@@ -201,6 +204,8 @@ export default function Header() {
           setSignUpOpen(true)
         }}
       />
+
+      {/* Sign Up Modal */}
       <SignUp
         open={signUpOpen}
         onClose={() => setSignUpOpen(false)}

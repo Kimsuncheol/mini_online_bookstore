@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Header from '../common/Header'
-import AuthProvider from '../providers/AuthProvider'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 interface ClientLayoutProps {
   children: React.ReactNode

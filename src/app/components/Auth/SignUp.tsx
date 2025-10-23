@@ -3,20 +3,18 @@
 import React, { useState } from 'react'
 import {
   Dialog,
+  DialogTitle,
   DialogContent,
   Box,
-  Typography,
   TextField,
   Button,
+  Typography,
+  CircularProgress,
+  Alert,
   Divider,
-  IconButton,
-  alpha,
-  CircularProgress
 } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
 import GoogleIcon from '@mui/icons-material/Google'
-import EmailIcon from '@mui/icons-material/Email'
-import { signIn } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface SignUpProps {
   open: boolean
@@ -26,239 +24,217 @@ interface SignUpProps {
 
 export default function SignUp({ open, onClose, onSwitchToSignIn }: SignUpProps) {
   const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [signUpSuccess, setSignUpSuccess] = useState(false)
+  const [validationError, setValidationError] = useState('')
+
+  const { signUpWithEmail, signInWithGoogle, error, clearError, loading } = useAuth()
+
+  const validateForm = (): boolean => {
+    setValidationError('')
+
+    if (!email || !password || !confirmPassword) {
+      setValidationError('All fields are required')
+      return false
+    }
+
+    if (password.length < 6) {
+      setValidationError('Password must be at least 6 characters')
+      return false
+    }
+
+    if (password !== confirmPassword) {
+      setValidationError('Passwords do not match')
+      return false
+    }
+
+    return true
+  }
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+
+    if (!validateForm()) {
+      return
+    }
 
     try {
-      const result = await signIn('email', {
-        email,
-        redirect: false,
-      })
-
-      if (result?.ok) {
-        setEmailSent(true)
-      }
-    } catch (error) {
-      console.error('Sign up error:', error)
-    } finally {
-      setLoading(false)
+      await signUpWithEmail(email, password, displayName || undefined)
+      setSignUpSuccess(true)
+    } catch (err) {
+      console.error('Sign up error:', err)
     }
   }
 
   const handleGoogleSignUp = async () => {
-    setLoading(true)
     try {
-      await signIn('google', { callbackUrl: '/' })
-    } catch (error) {
-      console.error('Google sign up error:', error)
-      setLoading(false)
+      await signInWithGoogle()
+      handleClose()
+    } catch (err) {
+      console.error('Google sign up error:', err)
     }
   }
 
   const handleClose = () => {
     setEmail('')
-    setEmailSent(false)
-    setLoading(false)
+    setPassword('')
+    setConfirmPassword('')
+    setDisplayName('')
+    setSignUpSuccess(false)
+    setValidationError('')
+    clearError()
     onClose()
   }
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: '24px',
-            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.15)',
-            overflow: 'hidden'
-          }
-        }
-      }}
-    >
-      <IconButton
-        onClick={handleClose}
-        sx={{
-          position: 'absolute',
-          right: 16,
-          top: 16,
-          color: 'text.secondary',
-          zIndex: 1,
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.8),
-          }
-        }}
-      >
-        <CloseIcon />
-      </IconButton>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontSize: '1.5rem', fontWeight: 700, mb: 2 }}>
+        Create Your BookNest Account
+      </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ p: 5, pb: 4 }}>
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography
-              variant="h4"
+      <DialogContent>
+        {signUpSuccess ? (
+          // Success State
+          <Box sx={{ textAlign: 'center', py: 3 }}>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Account created successfully! You&apos;re now signed in.
+            </Alert>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Welcome to BookNest! Start exploring our collection of books.
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={handleClose}
               sx={{
-                fontWeight: 700,
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1
+                textTransform: 'none',
               }}
             >
-              Get Started
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Create your BookNest account
-            </Typography>
+              Continue to BookNest
+            </Button>
           </Box>
+        ) : (
+          // Sign Up Form
+          <Box component="form" onSubmit={handleEmailSignUp} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {error && <Alert severity="error">{error}</Alert>}
+            {validationError && <Alert severity="warning">{validationError}</Alert>}
 
-          {emailSent ? (
-            <Box sx={{ textAlign: 'center', py: 3 }}>
-              <EmailIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-              <Typography variant="h6" gutterBottom fontWeight={600}>
-                Check your email
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                We sent a magic link to {email}
-              </Typography>
-              <Button
-                onClick={() => setEmailSent(false)}
-                sx={{ mt: 3, textTransform: 'none' }}
-              >
-                Use a different email
-              </Button>
-            </Box>
-          ) : (
-            <>
-              {/* Google Sign Up */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<GoogleIcon />}
-                onClick={handleGoogleSignUp}
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  mb: 2,
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  borderColor: 'divider',
-                  color: 'text.primary',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    borderColor: 'primary.main',
-                    backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.15)',
-                  }
-                }}
-              >
-                Continue with Google
-              </Button>
+            {/* Display Name Input */}
+            <TextField
+              label="Full Name"
+              type="text"
+              fullWidth
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              disabled={loading}
+              placeholder="John Doe"
+              variant="outlined"
+            />
 
-              <Divider sx={{ my: 3 }}>
-                <Typography variant="body2" color="text.secondary">
-                  or
-                </Typography>
-              </Divider>
+            {/* Email Input */}
+            <TextField
+              label="Email Address"
+              type="email"
+              fullWidth
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
+              placeholder="you@example.com"
+              variant="outlined"
+            />
 
-              {/* Email Sign Up */}
-              <form onSubmit={handleEmailSignUp}>
-                <TextField
-                  fullWidth
-                  type="email"
-                  label="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      '&:hover fieldset': {
-                        borderColor: 'primary.main',
-                      },
-                    }
-                  }}
-                />
+            {/* Password Input */}
+            <TextField
+              label="Password"
+              type="password"
+              fullWidth
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+              placeholder="At least 6 characters"
+              variant="outlined"
+              helperText="Must be at least 6 characters"
+            />
 
+            {/* Confirm Password Input */}
+            <TextField
+              label="Confirm Password"
+              type="password"
+              fullWidth
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
+              required
+              placeholder="Confirm your password"
+              variant="outlined"
+            />
+
+            {/* Sign Up Button */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading || !email || !password || !confirmPassword}
+              sx={{
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                mt: 1,
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+            </Button>
+
+            {/* Divider */}
+            <Divider sx={{ my: 1 }}>OR</Divider>
+
+            {/* Google Sign Up */}
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              onClick={handleGoogleSignUp}
+              disabled={loading}
+              sx={{
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                borderColor: '#e0e0e0',
+              }}
+            >
+              Sign Up with Google
+            </Button>
+
+            {/* Sign In Link */}
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Typography variant="body2" color="textSecondary">
+                Already have an account?{' '}
                 <Button
-                  fullWidth
-                  type="submit"
-                  variant="contained"
-                  disabled={loading}
+                  variant="text"
+                  onClick={() => {
+                    handleClose()
+                    onSwitchToSignIn()
+                  }}
                   sx={{
-                    py: 1.5,
-                    borderRadius: '12px',
+                    p: 0,
                     textTransform: 'none',
+                    color: 'primary.main',
                     fontWeight: 600,
-                    fontSize: '1rem',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                      boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
-                      transform: 'translateY(-2px)',
-                    },
-                    '&:disabled': {
-                      background: 'grey.300',
-                    }
                   }}
                 >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : 'Continue with Email'}
+                  Sign in
                 </Button>
-              </form>
-            </>
-          )}
-        </Box>
-
-        {/* Footer */}
-        <Box
-          sx={{
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            py: 2.5,
-            px: 5,
-            backgroundColor: (theme) => alpha(theme.palette.grey[50], 0.5),
-            textAlign: 'center'
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            Already signed up?{' '}
-            <Button
-              onClick={onSwitchToSignIn}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                p: 0,
-                minWidth: 'auto',
-                verticalAlign: 'baseline',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                '&:hover': {
-                  backgroundColor: 'transparent',
-                  textDecoration: 'underline',
-                }
-              }}
-            >
-              Sign in
-            </Button>
-          </Typography>
-        </Box>
+              </Typography>
+            </Box>
+          </Box>
+        )}
       </DialogContent>
     </Dialog>
   )
