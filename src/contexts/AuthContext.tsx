@@ -5,7 +5,6 @@ import { User } from 'firebase/auth'
 import {
   sendEmailSignInLink,
   completeEmailSignIn,
-  signUpWithEmailAndPassword,
   signInWithGooglePopup,
   logOut,
   onAuthStateChangeListener,
@@ -17,7 +16,6 @@ interface AuthContextType {
   error: string | null
   signInWithEmail: (email: string) => Promise<void>
   completeSignInWithEmail: (email: string) => Promise<User>
-  signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<User>
   signInWithGoogle: () => Promise<User>
   logout: () => Promise<void>
   clearError: () => void
@@ -76,24 +74,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }
 
-  const signUpWithEmail = async (
-    email: string,
-    password: string,
-    displayName?: string
-  ): Promise<User> => {
-    setLoading(true)
-    setError(null)
-    try {
-      const user = await signUpWithEmailAndPassword(email, password, displayName)
-      return user
-    } catch (err) {
-      const errorMsg = handleError(err)
-      setError(errorMsg)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const signInWithGoogle = async (): Promise<User> => {
     setLoading(true)
@@ -136,7 +116,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         error,
         signInWithEmail,
         completeSignInWithEmail,
-        signUpWithEmail,
         signInWithGoogle,
         logout,
         clearError,

@@ -16,17 +16,21 @@ import {
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import LogoutIcon from '@mui/icons-material/Logout'
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
-import SignIn from '../Auth/SignIn'
-import SignUp from '../Auth/SignUp'
+import { useRouter } from 'next/navigation'
+import SignInDialog from '../Auth/SignIn'
+import SignUpDialog from '../Auth/SignUp'
 
 export default function Header() {
   const [signInOpen, setSignInOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { user, logout } = useAuth()
+  const router = useRouter();
+
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -82,7 +86,7 @@ export default function Header() {
             }}
           >
             <Link href={"/"}>
-              <Image src={"/logo.png"} alt='logo' width={100} height={80} style={{objectFit: 'contain', aspectRatio: '1/0.8'}}/>
+              <Image src={"/logo.png"} alt='logo' width={100} height={80} style={{ objectFit: 'contain', aspectRatio: '1/0.8' }} />
             </Link>
           </Box>
 
@@ -123,6 +127,26 @@ export default function Header() {
             />
 
             {/* Auth Button or User Menu */}
+            {/* <Link href="/cart"> */}
+              <IconButton
+                sx={{
+                  color: 'text.primary',
+                  '&:hover': {
+                    backgroundColor: alpha('#667eea', 0.1),
+                  },
+                }}
+                onClick={(e) => {
+                  if (user) {
+                    router.push('/cart');
+                  } else {
+                    setSignInOpen(true);
+                    e.stopPropagation();
+                  }
+                }}
+              >
+                <ShoppingCartIcon />
+              </IconButton>
+            {/* </Link> */}
             {user ? (
               <>
                 <IconButton
@@ -172,6 +196,7 @@ export default function Header() {
                 </Menu>
               </>
             ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Button
                   variant="contained"
                   onClick={() => setSignInOpen(true)}
@@ -190,13 +215,14 @@ export default function Header() {
                 >
                   Sign In
                 </Button>
+              </Box>
             )}
           </Box>
         </Toolbar>
       </AppBar>
 
       {/* Sign In Modal */}
-      <SignIn
+      <SignInDialog
         open={signInOpen}
         onClose={() => setSignInOpen(false)}
         onSwitchToSignUp={() => {
@@ -206,7 +232,7 @@ export default function Header() {
       />
 
       {/* Sign Up Modal */}
-      <SignUp
+      <SignUpDialog
         open={signUpOpen}
         onClose={() => setSignUpOpen(false)}
         onSwitchToSignIn={() => {

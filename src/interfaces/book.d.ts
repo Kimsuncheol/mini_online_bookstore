@@ -1,0 +1,89 @@
+/**
+ * Book Interface
+ * Represents a book in the BookNest online bookstore
+ */
+export interface Book {
+  // Basic Information
+  id: string
+  title: string
+  author: string
+  isbn?: string
+
+  // Description and Content
+  description?: string
+  genre: string
+  language?: string
+  publishedDate?: Date
+  pageCount?: number
+
+  // Pricing and Availability
+  price: number
+  originalPrice?: number
+  currency?: string
+  inStock: boolean
+  stockQuantity: number
+
+  // Media
+  coverImage?: string
+  coverImageUrl?: string
+
+  // Ratings and Reviews
+  rating?: number
+  reviewCount?: number
+
+  // Publishing Information
+  publisher?: string
+  edition?: string
+
+  // Additional Metadata
+  createdAt?: Date
+  updatedAt?: Date
+  isNew?: boolean
+  isFeatured?: boolean
+  discount?: number
+}
+
+/**
+ * Book Filter Options Interface
+ * Used for filtering books in search and browse
+ */
+export interface BookFilterOptions {
+  genres?: string[]
+  minPrice?: number
+  maxPrice?: number
+  rating?: number
+  inStockOnly?: boolean
+  searchTerm?: string
+  sortBy?: 'price-low-to-high' | 'price-high-to-low' | 'newest' | 'rating' | 'title'
+  page?: number
+  limit?: number
+}
+
+/**
+ * Book Category Interface
+ * Represents book categories/genres
+ */
+export interface BookCategory {
+  id: string
+  name: string
+  description?: string
+  icon?: string
+  bookCount?: number
+}
+
+/**
+ * Book Review Interface
+ * Represents a user review for a book
+ */
+export interface BookReview {
+  id: string
+  bookId: string
+  userId: string
+  userName: string
+  rating: number
+  title: string
+  content: string
+  helpful: number
+  createdAt: Date
+  updatedAt?: Date
+}

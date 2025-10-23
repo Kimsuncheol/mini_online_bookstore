@@ -3,6 +3,7 @@
 import React from 'react'
 import Header from '../common/Header'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { CartProvider } from '@/contexts/CartContext'
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -11,8 +12,10 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <AuthProvider>
-      <Header />
-      {children}
+      <CartProvider>
+        <Header />
+        {children}
+      </CartProvider>
     </AuthProvider>
   )
 }
