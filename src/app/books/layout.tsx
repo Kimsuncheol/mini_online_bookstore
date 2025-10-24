@@ -1,4 +1,5 @@
 import React from 'react'
+import Tabbar from '../components/common/Tabbar/Tabbar'
 
 export const metadata = {
   title: 'Books | BookNest',
@@ -12,6 +13,7 @@ interface BooksLayoutProps {
 export default function BooksLayout({ children }: BooksLayoutProps) {
   return (
     <main>
+      <Tabbar />
       {children}
     </main>
   )

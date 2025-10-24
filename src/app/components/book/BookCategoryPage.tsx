@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import {
   Box,
   Button,
@@ -10,21 +10,19 @@ import {
   Chip,
   Container,
   Divider,
-  Grid,
   Rating,
   Stack,
   Typography,
   alpha,
+  useMediaQuery,
 } from '@mui/material'
 import Link from 'next/link'
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch'
 import LocalOfferIcon from '@mui/icons-material/LocalOffer'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark'
 import LaunchIcon from '@mui/icons-material/Launch'
 import { Book } from '@/interfaces/book'
-import { useCart } from '@/contexts/CartContext'
 
 interface BookCategoryPageProps {
   category: string
@@ -50,8 +48,16 @@ export default function BookCategoryPage({
   description,
   books,
 }: BookCategoryPageProps) {
-  const { addToCart } = useCart()
-  const [selectedBook, setSelectedBook] = useState<string | null>(null)
+  const isMax440 = useMediaQuery('(max-width:440px)')
+  const isMax660 = useMediaQuery('(max-width:660px)')
+  const isMax880 = useMediaQuery('(max-width:880px)')
+
+  const gridColumns = useMemo(() => {
+    if (isMax440) return 2
+    if (isMax660) return 3
+    if (isMax880) return 4
+    return 5
+  }, [isMax440, isMax660, isMax880])
 
   const layoutVariant: LayoutVariant = useMemo(() => {
     if (category === 'recommended') return 'recommended'
@@ -60,18 +66,6 @@ export default function BookCategoryPage({
   }, [category])
 
   const heroBook = books[0]
-
-  const handleAddToCart = (book: Book) => {
-    addToCart({
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      price: book.price,
-      image: book.coverImageUrl || book.coverImage,
-    })
-    setSelectedBook(book.id)
-    setTimeout(() => setSelectedBook(null), 1400)
-  }
 
   const renderBookCard = (book: Book) => (
     <Card
@@ -204,29 +198,22 @@ export default function BookCategoryPage({
             </Typography>
           )}
         </Stack>
-
-        <Button
-          fullWidth
-          variant={selectedBook === book.id ? 'contained' : 'outlined'}
-          startIcon={<ShoppingCartIcon />}
-          onClick={() => handleAddToCart(book)}
-          disabled={!book.inStock}
-          sx={{ mt: 'auto', fontWeight: 600, textTransform: 'none', borderRadius: 2 }}
-        >
-          {selectedBook === book.id ? 'Added!' : 'Add to Cart'}
-        </Button>
       </CardContent>
     </Card>
   )
 
   const renderStandardGrid = (subset: Book[]) => (
-    <Grid container spacing={3}>
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 3,
+        gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
+      }}
+    >
       {subset.map((book) => (
-        <Grid item xs={6} sm={4} md={3} key={book.id}>
-          {renderBookCard(book)}
-        </Grid>
+        <Box key={book.id}>{renderBookCard(book)}</Box>
       ))}
-    </Grid>
+    </Box>
   )
 
   const renderRecommendedLayout = () => {
@@ -268,38 +255,23 @@ export default function BookCategoryPage({
               {heroBook.description?.slice(0, 180) ||
                 'Discover a handpicked title our editors are loving right now.'}
             </Typography>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Link href={`/books/${heroBook.id}`} style={{ textDecoration: 'none' }}>
-                <Button
-                  variant="contained"
-                  endIcon={<LaunchIcon />}
-                  sx={{
-                    backgroundColor: '#38bdf8',
-                    color: '#0f172a',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    px: 3,
-                    borderRadius: 999,
-                    '&:hover': { backgroundColor: '#0ea5e9', color: '#fff' },
-                  }}
-                >
-                  View details
-                </Button>
-              </Link>
+            <Link href={`/books/${heroBook.id}`} style={{ textDecoration: 'none' }}>
               <Button
-                variant="text"
-                onClick={() => handleAddToCart(heroBook)}
-                startIcon={<ShoppingCartIcon />}
+                variant="contained"
+                endIcon={<LaunchIcon />}
                 sx={{
-                  color: '#e2e8f0',
+                  backgroundColor: '#38bdf8',
+                  color: '#0f172a',
+                  fontWeight: 700,
                   textTransform: 'none',
-                  fontWeight: 600,
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)' },
+                  px: 3,
+                  borderRadius: 999,
+                  '&:hover': { backgroundColor: '#0ea5e9', color: '#fff' },
                 }}
               >
-                {selectedBook === heroBook.id ? 'Added!' : 'Add to cart'}
+                View details
               </Button>
-            </Stack>
+            </Link>
           </Stack>
 
           <Box
@@ -351,77 +323,86 @@ export default function BookCategoryPage({
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               Currently Trending
             </Typography>
-            <Grid container spacing={2}>
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 2,
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(4, 1fr)',
+                },
+              }}
+            >
               {ranking.map((book, index) => (
-                <Grid item xs={12} sm={6} md={3} key={`${book.id}-${index}`}>
-                  <Box
+                <Box
+                  key={`${book.id}-${index}`}
+                  sx={{
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    backgroundColor: 'background.paper',
+                    display: 'flex',
+                    gap: 2,
+                    p: 2,
+                    alignItems: 'stretch',
+                    height: '100%',
+                  }}
+                >
+                  <Typography
+                    variant="h4"
                     sx={{
-                      borderRadius: 3,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      backgroundColor: 'background.paper',
-                      display: 'flex',
-                      gap: 2,
-                      p: 2,
-                      alignItems: 'stretch',
-                      height: '100%',
+                      fontWeight: 700,
+                      color: index < 3 ? 'primary.main' : 'text.secondary',
+                      lineHeight: 1,
                     }}
                   >
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: index < 3 ? 'primary.main' : 'text.secondary',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {index + 1}
-                    </Typography>
-                    <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-                      <Link href={`/books/${book.id}`} style={{ textDecoration: 'none' }}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            fontWeight: 600,
-                            color: 'text.primary',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {book.title}
-                        </Typography>
-                      </Link>
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        {book.author}
+                    {index + 1}
+                  </Typography>
+                  <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
+                    <Link href={`/books/${book.id}`} style={{ textDecoration: 'none' }}>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 600,
+                          color: 'text.primary',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {book.title}
                       </Typography>
-                      {book.rating && (
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Rating value={book.rating} precision={0.5} readOnly size="small" />
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            {book.reviewCount || 0} reviews
-                          </Typography>
-                        </Stack>
-                      )}
+                    </Link>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      {book.author}
+                    </Typography>
+                    {book.rating && (
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          ${book.price.toFixed(2)}
+                        <Rating value={book.rating} precision={0.5} readOnly size="small" />
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {book.reviewCount || 0} reviews
                         </Typography>
-                        {book.originalPrice && book.originalPrice > book.price && (
-                          <Typography
-                            variant="caption"
-                            sx={{ textDecoration: 'line-through', color: 'text.disabled' }}
-                          >
-                            ${book.originalPrice.toFixed(2)}
-                          </Typography>
-                        )}
                       </Stack>
+                    )}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                        ${book.price.toFixed(2)}
+                      </Typography>
+                      {book.originalPrice && book.originalPrice > book.price && (
+                        <Typography
+                          variant="caption"
+                          sx={{ textDecoration: 'line-through', color: 'text.disabled' }}
+                        >
+                          ${book.originalPrice.toFixed(2)}
+                        </Typography>
+                      )}
                     </Stack>
-                  </Box>
-                </Grid>
+                  </Stack>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           </Stack>
         )}
 
@@ -516,13 +497,6 @@ export default function BookCategoryPage({
                     />
                   )}
                 </Box>
-                <Button
-                  variant="contained"
-                  onClick={() => handleAddToCart(book)}
-                  sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 999 }}
-                >
-                  {selectedBook === book.id ? 'Added!' : 'Add to Cart'}
-                </Button>
               </Box>
             ))}
           </Stack>
@@ -578,7 +552,7 @@ export default function BookCategoryPage({
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
+    <Container maxWidth={false} sx={{ py: { xs: 4, md: 6 } }}>
       <Stack spacing={1.5} sx={{ mb: 4 }}>
         <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: -0.5 }}>
           {title}
