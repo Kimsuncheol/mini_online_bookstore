@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import LogoutIcon from '@mui/icons-material/Logout'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -128,24 +129,24 @@ export default function Header() {
 
             {/* Auth Button or User Menu */}
             {/* <Link href="/cart"> */}
-              <IconButton
-                sx={{
-                  color: 'text.primary',
-                  '&:hover': {
-                    backgroundColor: alpha('#667eea', 0.1),
-                  },
-                }}
-                onClick={(e) => {
-                  if (user) {
-                    router.push('/cart');
-                  } else {
-                    setSignInOpen(true);
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                <ShoppingCartIcon />
-              </IconButton>
+            <IconButton
+              sx={{
+                color: 'text.primary',
+                '&:hover': {
+                  backgroundColor: alpha('#667eea', 0.1),
+                },
+              }}
+              onClick={(e) => {
+                if (user) {
+                  router.push('/cart');
+                } else {
+                  setSignInOpen(true);
+                  e.stopPropagation();
+                }
+              }}
+            >
+              <ShoppingCartIcon />
+            </IconButton>
             {/* </Link> */}
             {user ? (
               <>
@@ -188,6 +189,13 @@ export default function Header() {
                     <Box sx={{ fontSize: '0.875rem' }}>
                       {user.displayName || user.email}
                     </Box>
+                  </MenuItem>
+                  <MenuItem onClick={() => {
+                    router.push('/profile');
+                    handleMenuClose();
+                  }} sx={{ color: 'GrayText' }}>
+                    <AccountCircleIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                    Profile
                   </MenuItem>
                   <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                     <LogoutIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
