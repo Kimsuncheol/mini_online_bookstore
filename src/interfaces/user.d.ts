@@ -8,6 +8,7 @@ export interface User {
   email: string
   displayName?: string
   photoURL?: string
+  role?: 'admin' | 'author' | 'user'
 
   // Account Status
   isEmailVerified: boolean
