@@ -27,7 +27,7 @@ export default function NavigationChipsSlider({
         flex: 1,
         scrollBehavior: 'smooth',
         '&::-webkit-scrollbar': {
-          height: '6px',
+          height: 0,
         },
         '&::-webkit-scrollbar-track': {
           background: 'transparent',

@@ -1,12 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   CardMedia,
+  Chip,
+  CircularProgress,
   Container,
   Dialog,
   DialogActions,
@@ -18,10 +21,7 @@ import {
   Switch,
   TextField,
   Typography,
-  Alert,
-  Chip,
   alpha,
-  CircularProgress,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -31,7 +31,516 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import AutoStoriesIcon from '@mui/icons-material/AutoStories'
 import { Book } from '@/interfaces/book'
 import { useAuth } from '@/contexts/AuthContext'
-import { createBook, getAllBooks, updateBook, deleteBook } from '@/app/api/books'
+import { createBook, deleteBook, getAllBooks, updateBook } from '@/app/api/books'
+
+interface DashboardHeaderProps {
+  onAddBook: () => void
+}
+
+function DashboardHeader({ onAddBook }: DashboardHeaderProps) {
+  return (
+    <Box
+      sx={{
+        background: (theme) =>
+          `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+        borderRadius: 3,
+        p: 4,
+        mb: 4,
+        color: 'white',
+      }}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <AutoStoriesIcon sx={{ fontSize: 48 }} />
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Author Dashboard
+            </Typography>
+            <Typography variant="body1" sx={{ opacity: 0.9 }}>
+              Manage your books and publications
+            </Typography>
+          </Box>
+        </Stack>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={onAddBook}
+          sx={{
+            backgroundColor: 'white',
+            color: 'primary.main',
+            fontWeight: 600,
+            px: 3,
+            '&:hover': {
+              backgroundColor: alpha('#ffffff', 0.9),
+            },
+          }}
+        >
+          Add New Book
+        </Button>
+      </Stack>
+    </Box>
+  )
+}
+
+interface DashboardStatsProps {
+  books: Book[]
+}
+
+function DashboardStats({ books }: DashboardStatsProps) {
+  const stats = useMemo(
+    () => [
+      {
+        label: 'Total Books',
+        value: books.length,
+        color: 'primary.main',
+      },
+      {
+        label: 'In Stock',
+        value: books.filter((b) => b.inStock).length,
+        color: 'success.main',
+      },
+      {
+        label: 'Featured',
+        value: books.filter((b) => b.isFeatured).length,
+        color: 'secondary.main',
+      },
+    ],
+    [books]
+  )
+
+  return (
+    <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+      {stats.map((stat) => (
+        <Card key={stat.label} sx={{ flex: 1, borderRadius: 2 }}>
+          <CardContent>
+            <Typography color="text.secondary" gutterBottom>
+              {stat.label}
+            </Typography>
+            <Typography variant="h3" sx={{ fontWeight: 700, color: stat.color }}>
+              {stat.value}
+            </Typography>
+          </CardContent>
+        </Card>
+      ))}
+    </Stack>
+  )
+}
+
+interface BooksGridProps {
+  books: Book[]
+  onEdit: (book: Book) => void
+  onDelete: (book: Book) => void
+}
+
+function BooksGrid({ books, onEdit, onDelete }: BooksGridProps) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 3,
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
+          lg: 'repeat(4, 1fr)',
+        },
+      }}
+    >
+      {books.map((book) => (
+        <Card
+          key={book.id}
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: 6,
+            },
+          }}
+        >
+          <CardMedia
+            component="div"
+            sx={{
+              height: 240,
+              backgroundColor: '#e0e0e0',
+              backgroundImage: book.coverImageUrl
+                ? `url(${book.coverImageUrl})`
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              position: 'relative',
+            }}
+          >
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                display: 'flex',
+                gap: 1,
+              }}
+            >
+              {book.isNew && (
+                <Chip label="New" color="success" size="small" sx={{ fontWeight: 600 }} />
+              )}
+              {book.isFeatured && (
+                <Chip label="Featured" color="secondary" size="small" sx={{ fontWeight: 600 }} />
+              )}
+            </Box>
+          </CardMedia>
+          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                mb: 1,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {book.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {book.author}
+            </Typography>
+            <Chip label={book.genre} size="small" sx={{ mb: 2, alignSelf: 'flex-start' }} />
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                ${book.price.toFixed(2)}
+              </Typography>
+              {book.originalPrice && book.originalPrice > book.price && (
+                <Typography
+                  variant="caption"
+                  sx={{ textDecoration: 'line-through', color: 'text.disabled' }}
+                >
+                  ${book.originalPrice.toFixed(2)}
+                </Typography>
+              )}
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Stock: {book.stockQuantity} • {book.inStock ? 'In Stock' : 'Out of Stock'}
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={() => onEdit(book)}
+                sx={{ flex: 1, textTransform: 'none', fontWeight: 600 }}
+              >
+                Edit
+              </Button>
+              <IconButton
+                color="error"
+                onClick={() => onDelete(book)}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'error.main',
+                  borderRadius: 1,
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Stack>
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+  )
+}
+
+interface EmptyStateProps {
+  onAddBook: () => void
+  hidden: boolean
+}
+
+function EmptyState({ onAddBook, hidden }: EmptyStateProps) {
+  if (hidden) {
+    return null
+  }
+
+  return (
+    <Box
+      sx={{
+        textAlign: 'center',
+        py: 8,
+        px: 2,
+      }}
+    >
+      <AutoStoriesIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
+      <Typography variant="h5" gutterBottom color="text.secondary">
+        No books yet
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Start by adding your first book to the store
+      </Typography>
+      <Button variant="contained" startIcon={<AddIcon />} onClick={onAddBook} size="large">
+        Add Your First Book
+      </Button>
+    </Box>
+  )
+}
+
+interface BookDialogProps {
+  open: boolean
+  formData: Partial<Book>
+  isEditing: boolean
+  useCoverUrlInput: boolean
+  coverImageFileName: string
+  onClose: () => void
+  onSubmit: () => void
+  onInputChange: (field: keyof Book, value: string | number | boolean) => void
+  onToggleCoverSource: (useUrl: boolean) => void
+  onCoverFileSelect: (file: File | null) => void
+}
+
+function BookDialog({
+  open,
+  formData,
+  isEditing,
+  useCoverUrlInput,
+  coverImageFileName,
+  onClose,
+  onSubmit,
+  onInputChange,
+  onToggleCoverSource,
+  onCoverFileSelect,
+}: BookDialogProps) {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    onCoverFileSelect(file)
+    event.target.value = ''
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ fontWeight: 600, fontSize: '1.5rem' }}>
+        {isEditing ? 'Edit Book' : 'Add New Book'}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={3} sx={{ mt: 2 }}>
+          <TextField
+            label="Title *"
+            fullWidth
+            value={formData.title}
+            onChange={(e) => onInputChange('title', e.target.value)}
+          />
+          <TextField
+            label="Author *"
+            fullWidth
+            value={formData.author}
+            onChange={(e) => onInputChange('author', e.target.value)}
+          />
+          <TextField
+            label="Genre *"
+            fullWidth
+            value={formData.genre}
+            onChange={(e) => onInputChange('genre', e.target.value)}
+            placeholder="e.g., Fiction, Science, History"
+          />
+          <TextField
+            label="Description"
+            fullWidth
+            multiline
+            rows={4}
+            value={formData.description}
+            onChange={(e) => onInputChange('description', e.target.value)}
+          />
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Price *"
+              type="number"
+              fullWidth
+              value={formData.price}
+              onChange={(e) => onInputChange('price', parseFloat(e.target.value) || 0)}
+              inputProps={{ step: 0.01, min: 0 }}
+            />
+            <TextField
+              label="Stock Quantity *"
+              type="number"
+              fullWidth
+              value={formData.stockQuantity}
+              onChange={(e) =>
+                onInputChange('stockQuantity', Number.parseInt(e.target.value, 10) || 0)
+              }
+              inputProps={{ min: 0 }}
+            />
+          </Stack>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="ISBN"
+              fullWidth
+              value={formData.isbn}
+              onChange={(e) => onInputChange('isbn', e.target.value)}
+            />
+            <TextField
+              label="Language"
+              fullWidth
+              value={formData.language}
+              onChange={(e) => onInputChange('language', e.target.value)}
+            />
+          </Stack>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Page Count"
+              type="number"
+              fullWidth
+              value={formData.pageCount}
+              onChange={(e) => onInputChange('pageCount', Number.parseInt(e.target.value, 10) || 0)}
+              inputProps={{ min: 0 }}
+            />
+            <TextField
+              label="Publisher"
+              fullWidth
+              value={formData.publisher}
+              onChange={(e) => onInputChange('publisher', e.target.value)}
+            />
+          </Stack>
+
+          <Stack spacing={1.5}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+              Cover Image Source
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant={useCoverUrlInput ? 'contained' : 'outlined'}
+                onClick={() => onToggleCoverSource(true)}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Use URL
+              </Button>
+              <Button
+                variant={!useCoverUrlInput ? 'contained' : 'outlined'}
+                onClick={() => onToggleCoverSource(false)}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Upload Image
+              </Button>
+            </Stack>
+
+            {useCoverUrlInput ? (
+              <TextField
+                label="Cover Image URL"
+                fullWidth
+                value={formData.coverImageUrl}
+                onChange={(e) => onInputChange('coverImageUrl', e.target.value)}
+                placeholder="https://example.com/image.jpg"
+              />
+            ) : (
+              <Stack spacing={1}>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Select Image
+                  <input hidden accept="image/*" type="file" onChange={handleFileChange} />
+                </Button>
+                {coverImageFileName && (
+                  <Typography variant="body2" color="text.secondary">
+                    Selected file: {coverImageFileName}
+                  </Typography>
+                )}
+              </Stack>
+            )}
+
+            {formData.coverImageUrl && (
+              <Box
+                component="img"
+                src={formData.coverImageUrl}
+                alt="Book cover preview"
+                sx={{
+                  mt: 1,
+                  width: '100%',
+                  maxHeight: 240,
+                  objectFit: 'cover',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              />
+            )}
+          </Stack>
+
+          <Stack direction="row" spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.inStock || false}
+                  onChange={(e) => onInputChange('inStock', e.target.checked)}
+                />
+              }
+              label="In Stock"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isNew || false}
+                  onChange={(e) => onInputChange('isNew', e.target.checked)}
+                />
+              }
+              label="New Release"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isFeatured || false}
+                  onChange={(e) => onInputChange('isFeatured', e.target.checked)}
+                />
+              }
+              label="Featured"
+            />
+          </Stack>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Button onClick={onClose} startIcon={<CancelIcon />} sx={{ textTransform: 'none', fontWeight: 600 }}>
+          Cancel
+        </Button>
+        <Button
+          onClick={onSubmit}
+          variant="contained"
+          startIcon={<SaveIcon />}
+          sx={{ textTransform: 'none', fontWeight: 600 }}
+        >
+          {isEditing ? 'Update Book' : 'Create Book'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+interface DeleteDialogProps {
+  open: boolean
+  book?: Book | null
+  onClose: () => void
+  onConfirm: () => void
+}
+
+function DeleteConfirmationDialog({ open, book, onClose, onConfirm }: DeleteDialogProps) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Confirm Delete</DialogTitle>
+      <DialogContent>
+        <Typography>
+          Are you sure you want to delete &ldquo;{book?.title}&rdquo;? This action cannot be undone.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onConfirm} color="error" variant="contained">
+          Delete
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
 
 export default function AuthorDashboard() {
   const { user, loading: authLoading } = useAuth()
@@ -43,8 +552,9 @@ export default function AuthorDashboard() {
   const [editingBook, setEditingBook] = useState<Book | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null)
+  const [useCoverUrlInput, setUseCoverUrlInput] = useState(true)
+  const [coverImageFileName, setCoverImageFileName] = useState('')
 
-  // Form state
   const [formData, setFormData] = useState<Partial<Book>>({
     title: '',
     author: '',
@@ -62,13 +572,12 @@ export default function AuthorDashboard() {
     isFeatured: false,
   })
 
-  // Check if user is an author (in real app, check custom claims or database)
-  const isAuthor = user !== null // For now, any logged-in user can be an author
+  const isAuthor = user !== null
 
   useEffect(() => {
     if (!authLoading) {
       if (isAuthor) {
-        loadBooks()
+        void loadBooks()
       } else {
         setLoading(false)
       }
@@ -88,28 +597,36 @@ export default function AuthorDashboard() {
     }
   }
 
+  const resetFormState = (authorName: string) => {
+    setFormData({
+      title: '',
+      author: authorName,
+      genre: '',
+      price: 0,
+      stockQuantity: 0,
+      description: '',
+      isbn: '',
+      language: 'English',
+      pageCount: 0,
+      publisher: '',
+      coverImageUrl: '',
+      inStock: true,
+      isNew: false,
+      isFeatured: false,
+    })
+    setUseCoverUrlInput(true)
+    setCoverImageFileName('')
+  }
+
   const handleOpenDialog = (book?: Book) => {
     if (book) {
       setEditingBook(book)
       setFormData(book)
+      setUseCoverUrlInput(Boolean(book.coverImageUrl))
+      setCoverImageFileName('')
     } else {
       setEditingBook(null)
-      setFormData({
-        title: '',
-        author: user?.displayName || '',
-        genre: '',
-        price: 0,
-        stockQuantity: 0,
-        description: '',
-        isbn: '',
-        language: 'English',
-        pageCount: 0,
-        publisher: '',
-        coverImageUrl: '',
-        inStock: true,
-        isNew: false,
-        isFeatured: false,
-      })
+      resetFormState(user?.displayName || '')
     }
     setOpenDialog(true)
   }
@@ -118,10 +635,32 @@ export default function AuthorDashboard() {
     setOpenDialog(false)
     setEditingBook(null)
     setError(null)
+    setCoverImageFileName('')
   }
 
   const handleInputChange = (field: keyof Book, value: string | number | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleToggleCoverSource = (useUrl: boolean) => {
+    setUseCoverUrlInput(useUrl)
+    if (!useUrl) {
+      setFormData((prev) => ({ ...prev, coverImageUrl: '' }))
+    }
+  }
+
+  const handleCoverFileSelect = (file: File | null) => {
+    if (!file) return
+
+    setCoverImageFileName(file.name)
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        handleInputChange('coverImageUrl', reader.result)
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleSubmit = async () => {
@@ -135,12 +674,10 @@ export default function AuthorDashboard() {
       }
 
       if (editingBook && editingBook.id) {
-        // Update existing book
         const updated = await updateBook(editingBook.id, formData)
         setBooks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
         setSuccess('Book updated successfully!')
       } else {
-        // Create new book
         const newBook = await createBook(formData)
         setBooks((prev) => [newBook, ...prev])
         setSuccess('Book created successfully!')
@@ -217,49 +754,8 @@ export default function AuthorDashboard() {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-          borderRadius: 3,
-          p: 4,
-          mb: 4,
-          color: 'white',
-        }}
-      >
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <AutoStoriesIcon sx={{ fontSize: 48 }} />
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                Author Dashboard
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Manage your books and publications
-              </Typography>
-            </Box>
-          </Stack>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            sx={{
-              backgroundColor: 'white',
-              color: 'primary.main',
-              fontWeight: 600,
-              px: 3,
-              '&:hover': {
-                backgroundColor: alpha('#ffffff', 0.9),
-              },
-            }}
-          >
-            Add New Book
-          </Button>
-        </Stack>
-      </Box>
+      <DashboardHeader onAddBook={() => handleOpenDialog()} />
 
-      {/* Alerts */}
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 3, borderRadius: 2 }}>
           {error}
@@ -271,338 +767,31 @@ export default function AuthorDashboard() {
         </Alert>
       )}
 
-      {/* Stats */}
-      <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-        <Card sx={{ flex: 1, borderRadius: 2 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Total Books
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              {books.length}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, borderRadius: 2 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              In Stock
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700, color: 'success.main' }}>
-              {books.filter((b) => b.inStock).length}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, borderRadius: 2 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Featured
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700, color: 'secondary.main' }}>
-              {books.filter((b) => b.isFeatured).length}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Stack>
+      <DashboardStats books={books} />
 
-      {/* Books Grid */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-        }}
-      >
-        {books.map((book) => (
-          <Card
-            key={book.id}
-            sx={{
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 2,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 6,
-              },
-            }}
-          >
-            <CardMedia
-              component="div"
-              sx={{
-                height: 240,
-                backgroundColor: '#e0e0e0',
-                backgroundImage: book.coverImageUrl
-                  ? `url(${book.coverImageUrl})`
-                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                position: 'relative',
-              }}
-            >
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  display: 'flex',
-                  gap: 1,
-                }}
-              >
-                {book.isNew && (
-                  <Chip label="New" color="success" size="small" sx={{ fontWeight: 600 }} />
-                )}
-                {book.isFeatured && (
-                  <Chip label="Featured" color="secondary" size="small" sx={{ fontWeight: 600 }} />
-                )}
-              </Box>
-            </CardMedia>
-            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  mb: 1,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
-                {book.title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {book.author}
-              </Typography>
-              <Chip label={book.genre} size="small" sx={{ mb: 2, alignSelf: 'flex-start' }} />
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                  ${book.price.toFixed(2)}
-                </Typography>
-                {book.originalPrice && book.originalPrice > book.price && (
-                  <Typography
-                    variant="caption"
-                    sx={{ textDecoration: 'line-through', color: 'text.disabled' }}
-                  >
-                    ${book.originalPrice.toFixed(2)}
-                  </Typography>
-                )}
-              </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Stock: {book.stockQuantity} • {book.inStock ? 'In Stock' : 'Out of Stock'}
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  onClick={() => handleOpenDialog(book)}
-                  sx={{ flex: 1, textTransform: 'none', fontWeight: 600 }}
-                >
-                  Edit
-                </Button>
-                <IconButton
-                  color="error"
-                  onClick={() => handleDeleteClick(book)}
-                  sx={{
-                    border: '1px solid',
-                    borderColor: 'error.main',
-                    borderRadius: 1,
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
+      <BooksGrid books={books} onEdit={handleOpenDialog} onDelete={handleDeleteClick} />
 
-      {books.length === 0 && !loading && (
-        <Box
-          sx={{
-            textAlign: 'center',
-            py: 8,
-            px: 2,
-          }}
-        >
-          <AutoStoriesIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
-          <Typography variant="h5" gutterBottom color="text.secondary">
-            No books yet
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Start by adding your first book to the store
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            size="large"
-          >
-            Add Your First Book
-          </Button>
-        </Box>
-      )}
+      <EmptyState onAddBook={() => handleOpenDialog()} hidden={books.length !== 0 || loading} />
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600, fontSize: '1.5rem' }}>
-          {editingBook ? 'Edit Book' : 'Add New Book'}
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            <TextField
-              label="Title *"
-              fullWidth
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-            />
-            <TextField
-              label="Author *"
-              fullWidth
-              value={formData.author}
-              onChange={(e) => handleInputChange('author', e.target.value)}
-            />
-            <TextField
-              label="Genre *"
-              fullWidth
-              value={formData.genre}
-              onChange={(e) => handleInputChange('genre', e.target.value)}
-              placeholder="e.g., Fiction, Science, History"
-            />
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={4}
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-            />
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="Price *"
-                type="number"
-                fullWidth
-                value={formData.price}
-                onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
-                inputProps={{ step: 0.01, min: 0 }}
-              />
-              <TextField
-                label="Stock Quantity *"
-                type="number"
-                fullWidth
-                value={formData.stockQuantity}
-                onChange={(e) => handleInputChange('stockQuantity', parseInt(e.target.value) || 0)}
-                inputProps={{ min: 0 }}
-              />
-            </Stack>
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="ISBN"
-                fullWidth
-                value={formData.isbn}
-                onChange={(e) => handleInputChange('isbn', e.target.value)}
-              />
-              <TextField
-                label="Language"
-                fullWidth
-                value={formData.language}
-                onChange={(e) => handleInputChange('language', e.target.value)}
-              />
-            </Stack>
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="Page Count"
-                type="number"
-                fullWidth
-                value={formData.pageCount}
-                onChange={(e) => handleInputChange('pageCount', parseInt(e.target.value) || 0)}
-                inputProps={{ min: 0 }}
-              />
-              <TextField
-                label="Publisher"
-                fullWidth
-                value={formData.publisher}
-                onChange={(e) => handleInputChange('publisher', e.target.value)}
-              />
-            </Stack>
-            <TextField
-              label="Cover Image URL"
-              fullWidth
-              value={formData.coverImageUrl}
-              onChange={(e) => handleInputChange('coverImageUrl', e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
-            <Stack direction="row" spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.inStock || false}
-                    onChange={(e) => handleInputChange('inStock', e.target.checked)}
-                  />
-                }
-                label="In Stock"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isNew || false}
-                    onChange={(e) => handleInputChange('isNew', e.target.checked)}
-                  />
-                }
-                label="New Release"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isFeatured || false}
-                    onChange={(e) => handleInputChange('isFeatured', e.target.checked)}
-                  />
-                }
-                label="Featured"
-              />
-            </Stack>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button
-            onClick={handleCloseDialog}
-            startIcon={<CancelIcon />}
-            sx={{ textTransform: 'none', fontWeight: 600 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            startIcon={<SaveIcon />}
-            sx={{ textTransform: 'none', fontWeight: 600 }}
-          >
-            {editingBook ? 'Update Book' : 'Create Book'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <BookDialog
+        open={openDialog}
+        formData={formData}
+        isEditing={Boolean(editingBook)}
+        useCoverUrlInput={useCoverUrlInput}
+        coverImageFileName={coverImageFileName}
+        onClose={handleCloseDialog}
+        onSubmit={handleSubmit}
+        onInputChange={handleInputChange}
+        onToggleCoverSource={handleToggleCoverSource}
+        onCoverFileSelect={handleCoverFileSelect}
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete &ldquo;{bookToDelete?.title}&rdquo;? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <DeleteConfirmationDialog
+        open={deleteConfirmOpen}
+        book={bookToDelete}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+      />
     </Container>
   )
 }
