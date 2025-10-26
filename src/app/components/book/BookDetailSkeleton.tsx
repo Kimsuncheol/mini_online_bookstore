@@ -4,7 +4,6 @@ import React from 'react'
 import {
   Box,
   Container,
-  Grid,
   Skeleton,
   Stack,
   alpha,
@@ -21,8 +20,14 @@ export default function BookDetailSkeleton() {
         <Skeleton width={180} height={20} />
       </Stack>
 
-      <Grid container spacing={{ xs: 4, md: 6 }}>
-        <Grid item xs={12} md={5}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '5fr 7fr' },
+          gap: { xs: 4, md: 6 },
+        }}
+      >
+        <Box>
           <Box
             sx={{
               position: 'sticky',
@@ -41,9 +46,9 @@ export default function BookDetailSkeleton() {
               sx={{ borderRadius: 3 }}
             />
           </Box>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={7}>
+        <Box>
           <Stack spacing={4}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={1.5}>
@@ -108,8 +113,8 @@ export default function BookDetailSkeleton() {
               ))}
             </Stack>
           </Stack>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Container>
   )
 }

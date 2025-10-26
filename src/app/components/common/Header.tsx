@@ -56,6 +56,11 @@ export default function Header() {
     handleMenuClose()
   }
 
+  const handleUserManagementClick = () => {
+    router.push('/admin/users')
+    handleMenuClose()
+  }
+
   return (
     <>
       <AppBar
@@ -83,6 +88,7 @@ export default function Header() {
                 onMenuClose={handleMenuClose}
                 onProfileClick={handleProfileClick}
                 onAuthorDashboardClick={handleAuthorDashboardClick}
+                onUserManagementClick={handleUserManagementClick}
                 onLogout={handleLogout}
               />
             ) : (

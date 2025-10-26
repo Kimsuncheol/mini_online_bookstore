@@ -8,7 +8,6 @@ import {
   Chip,
   Container,
   Divider,
-  Grid,
   Rating,
   Stack,
   TextField,
@@ -92,8 +91,14 @@ export default function BookDetail({ book }: BookDetailProps) {
         <Typography sx={{ color: 'text.primary' }}>{book.title}</Typography>
       </Stack>
 
-      <Grid container spacing={{ xs: 4, md: 6 }}>
-        <Grid item xs={12} md={5}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '5fr 7fr' },
+          gap: { xs: 4, md: 6 },
+        }}
+      >
+        <Box>
           <Box
             sx={{
               position: 'sticky',
@@ -134,9 +139,9 @@ export default function BookDetail({ book }: BookDetailProps) {
               )}
             </Box>
           </Box>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={7}>
+        <Box>
           <Stack spacing={4}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={1.5} alignItems="center">
@@ -355,8 +360,8 @@ export default function BookDetail({ book }: BookDetailProps) {
               </Stack>
             </Stack>
           </Stack>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Container>
   )
 }

@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
 import type { CartItem } from '@/interfaces/cart'
 
+export type { CartItem }
+
 interface CartContextType {
   items: CartItem[]
   totalItems: number

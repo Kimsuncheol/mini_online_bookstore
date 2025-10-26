@@ -2,9 +2,9 @@ import { Book } from '@/interfaces/book'
 import BookDetail from '@/app/components/book/BookDetail'
 
 interface BookPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // Mock function to fetch book data - replace with actual API call
@@ -61,7 +61,8 @@ async function getBook(id: string): Promise<Book> {
 }
 
 export async function generateMetadata({ params }: BookPageProps) {
-  const book = await getBook(params.id)
+  const { id } = await params
+  const book = await getBook(id)
 
   return {
     title: `${book.title} | BookNest`,
@@ -75,7 +76,8 @@ export async function generateMetadata({ params }: BookPageProps) {
 }
 
 export default async function BookPage({ params }: BookPageProps) {
-  const book = await getBook(params.id)
+  const { id } = await params
+  const book = await getBook(id)
 
   return <BookDetail book={book} />
 }

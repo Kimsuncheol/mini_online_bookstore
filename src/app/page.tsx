@@ -1,7 +1,6 @@
-import Dashboard from "./components/home/Dashboard";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <Dashboard />
-  );
+  redirect('/books/recommended');
+  return null;
 }

@@ -3,14 +3,16 @@ import { Avatar, IconButton, Menu, MenuItem, Box, alpha } from '@mui/material'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import LogoutIcon from '@mui/icons-material/Logout'
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
+import PeopleIcon from '@mui/icons-material/People'
 
 type HeaderUserMenuProps = {
-  user: { displayName?: string | null; email?: string | null, role: 'admin' | 'author' | 'user' | null } | null
+  user: { displayName?: string | null; email?: string | null; role?: 'admin' | 'author' | 'user' | null } | null
   anchorEl: HTMLElement | null
   onMenuOpen: (event: MouseEvent<HTMLElement>) => void
   onMenuClose: () => void
   onProfileClick: () => void
   onAuthorDashboardClick: () => void
+  onUserManagementClick: () => void
   onLogout: () => void | Promise<void>
 }
 
@@ -31,6 +33,7 @@ export default function HeaderUserMenu({
   onMenuClose,
   onProfileClick,
   onAuthorDashboardClick,
+  onUserManagementClick,
   onLogout,
 }: HeaderUserMenuProps) {
   if (!user) return null
@@ -75,37 +78,71 @@ export default function HeaderUserMenu({
         <MenuItem disabled>
           <Box sx={{ fontSize: '0.875rem' }}>{user.displayName || user.email}</Box>
         </MenuItem>
-        <MenuItem
+        <CustomizedMenuItem
           onClick={onProfileClick}
           sx={{ color: 'GrayText' }}
-        >
-          <AccountCircleIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-          Profile
-        </MenuItem>
-        <MenuItem
+          text="Profile"
+          icon={<AccountCircleIcon />}
+        />
+        {/* Don't remove the code below */}
+        {/* {(user.role === 'admin' || user.role === 'author') && (
+          <CustomizedMenuItem
           onClick={onAuthorDashboardClick}
           sx={{ color: 'GrayText' }}
-        >
-          <DashboardCustomizeIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-          Author Dashboard
-        </MenuItem>
-        {/* {(user?.role === 'admin' || 'author') && (
-          <MenuItem
-            onClick={onAuthorDashboardClick}
-            sx={{ color: 'GrayText' }}
-          >
-            <DashboardCustomizeIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-            Author Dashboard
-          </MenuItem>
+          text="Author Dashboard"
+          icon={<DashboardCustomizeIcon />}
+        />
         )} */}
-        <MenuItem
+        <CustomizedMenuItem
+          onClick={onAuthorDashboardClick}
+          sx={{ color: 'GrayText' }}
+          text="Author Dashboard"
+          icon={<DashboardCustomizeIcon />}
+        />
+        {/* Don't remove the code below */}
+        {/* {user.role === 'admin' && (
+          <CustomizedMenuItem
+          onClick={onUserManagementClick}
+          sx={{ color: 'GrayText' }}
+          text="User Management"
+          icon={<PeopleIcon />}
+        />
+        )} */}
+        <CustomizedMenuItem
+          onClick={onUserManagementClick}
+          sx={{ color: 'GrayText' }}
+          text="User Management"
+          icon={<PeopleIcon />}
+        />
+        <CustomizedMenuItem
           onClick={onLogout}
-          sx={{ color: 'error.main' }}
-        >
-          <LogoutIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-          Logout
-        </MenuItem>
+          sx={{ color: 'GrayText' }}
+          text="Logout"
+          icon={<LogoutIcon />}
+        />
       </Menu>
     </>
+  )
+}
+
+function CustomizedMenuItem({
+  onClick,
+  sx,
+  text,
+  icon,
+}: {
+  onClick: () => void,
+  sx?: React.CSSProperties,
+  text?: string,
+  icon?: React.ReactElement,
+}) {
+  return (
+    <MenuItem
+      onClick={onClick}
+      sx={sx}
+    >
+      {icon && <Box sx={{ mr: 1, fontSize: '1.2rem' }}>{icon}</Box>}
+      {text}
+    </MenuItem>
   )
 }

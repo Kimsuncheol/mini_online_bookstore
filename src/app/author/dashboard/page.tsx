@@ -593,7 +593,7 @@ export default function AuthorDashboard() {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{bookToDelete?.title}"? This action cannot be undone.
+            Are you sure you want to delete &ldquo;{bookToDelete?.title}&rdquo;? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>

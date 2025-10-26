@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Container, Grid, Typography } from '@mui/material'
+import { Box, Container, Typography } from '@mui/material'
 import { useCart } from '@/contexts/CartContext'
 import CartItems from './CartItems'
 import CartSummary from './CartSummary'
@@ -31,19 +31,25 @@ export default function Cart() {
         </Typography>
       </Box>
 
-      {/* Main Content Grid */}
-      <Grid container spacing={3}>
+      {/* Main Content */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
+          gap: 3,
+        }}
+      >
         {/* Cart Items Section */}
-        <Grid item xs={12} md={8}>
+        <Box>
           <CartItems
             items={items}
             onUpdateQuantity={updateQuantity}
             onRemove={removeFromCart}
           />
-        </Grid>
+        </Box>
 
         {/* Order Summary Sidebar */}
-        <Grid item xs={12} md={4}>
+        <Box>
           <Box sx={{ position: 'sticky', top: 20 }}>
             <CartSummary
               totalItems={totalItems}
@@ -51,8 +57,8 @@ export default function Cart() {
               onCheckout={handleCheckout}
             />
           </Box>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Container>
   )
 }
