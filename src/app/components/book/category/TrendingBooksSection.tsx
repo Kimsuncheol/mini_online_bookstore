@@ -56,7 +56,7 @@ export default function TrendingBooksSection({ books }: TrendingBooksSectionProp
               {index + 1}
             </Typography>
             <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-              <Link href={`/books/${book.id}`} style={{ textDecoration: 'none' }}>
+              <Link href={`/book/${book.id}`} style={{ textDecoration: 'none' }}>
                 <Typography
                   variant="subtitle1"
                   sx={{

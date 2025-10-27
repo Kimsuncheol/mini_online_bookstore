@@ -6,8 +6,8 @@ import CartItemCard from './CartItemCard'
 
 interface CartItemsProps {
   items: CartItem[]
-  onUpdateQuantity: (id: string, quantity: number) => void
-  onRemove: (id: string) => void
+  onUpdateQuantity: (id: string, quantity: number) => Promise<void>
+  onRemove: (id: string) => Promise<void>
 }
 
 export default function CartItems({

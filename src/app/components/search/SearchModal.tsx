@@ -1,21 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Popover,
-  TextField,
-  InputAdornment,
-  Box,
-  Typography,
-  IconButton,
-  Divider,
-  Stack,
   Paper,
   Snackbar,
   Alert,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import CloseIcon from '@mui/icons-material/Close'
 import { useRouter } from 'next/navigation'
 import type { SearchHistoryItem, SearchResult } from '@/interfaces/search'
 import {
@@ -26,11 +17,11 @@ import {
   getSearchSettings,
   saveSearchSettings,
 } from '@/services/searchHistoryService'
-import RecentSearchItem from './RecentSearchItem'
-import SearchResultItem from './SearchResultItem'
-import SearchHistoryToggle from './SearchHistoryToggle'
-import DeleteSearchHistoryToggle from './DeleteSearchHistoryToggle'
 import ConfirmDialog from '../common/dialogs/ConfirmDialog'
+import SearchModeContent from './SearchModeContent'
+import AIModeContent from './AIModeContent'
+
+type SearchModalMode = 'search' | 'ai'
 
 interface SearchModalProps {
   open: boolean
@@ -76,6 +67,7 @@ function searchBooks(query: string): SearchResult[] {
 
 export default function SearchModal({ open, onClose, anchorEl }: SearchModalProps) {
   const router = useRouter()
+  const [mode, setMode] = useState<SearchModalMode>('search')
   const [query, setQuery] = useState('')
   const [history, setHistory] = useState<SearchHistoryItem[]>([])
   const [historyEnabled, setHistoryEnabled] = useState(true)
@@ -92,8 +84,13 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
     }
   }, [open])
 
-  // Search results
-  const results = useMemo(() => searchBooks(query), [query])
+  // Reset mode and query when modal opens (not during close to avoid width jump)
+  useEffect(() => {
+    if (open) {
+      setMode('search')
+      setQuery('')
+    }
+  }, [open])
 
   const handleSearch = (searchQuery: string) => {
     if (!searchQuery.trim()) return
@@ -137,141 +134,83 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
     }
   }
 
+  const handleSwitchToAIMode = () => {
+    setMode('ai')
+  }
+
+  const handleBackToSearch = () => {
+    setMode('search')
+  }
+
   const handleClose = () => {
-    setQuery('')
+    // Don't reset mode here to avoid width jump during closing animation
+    // Mode will be reset when modal opens again
     onClose()
   }
 
+  // Memoize searchBooks to prevent recreating on each render
+  const memoizedSearchBooks = useCallback(searchBooks, [])
+
+  // Dynamic styling based on mode
+  const popoverStyles = mode === 'ai'
+    ? {
+        borderRadius: 3,
+        mt: 1,
+        width: 900,
+        maxWidth: '90vw',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+      }
+    : {
+        borderRadius: 3,
+        mt: 1,
+        width: anchorEl?.offsetWidth || 600,
+        maxWidth: 800,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+      }
+
   return (
-    <Popover
-      open={open}
-      anchorEl={anchorEl}
-      onClose={handleClose}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'left',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: 3,
-            mt: 1,
-            width: anchorEl?.offsetWidth || 400,
-            maxWidth: 600,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+    <>
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        slotProps={{
+          paper: {
+            sx: popoverStyles,
           },
-        },
-      }}
-    >
-      <Paper sx={{ p: 0 }}>
-        {/* Search Input */}
-        <Box sx={{ p: 2, pb: 1 }}>
-          <TextField
-            fullWidth
-            autoFocus
-            placeholder="Search for books, authors..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && query.trim()) {
-                handleSearch(query)
-              }
-            }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-                endAdornment: query && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setQuery('')}>
-                      <CloseIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-              },
-            }}
-          />
-        </Box>
-
-        <Divider />
-
-        {/* Content Area */}
-        <Box sx={{ maxHeight: '60vh', overflowY: 'auto', p: 2 }}>
-          {query.trim() ? (
-            // Show search results
-            results.length > 0 ? (
-              <Stack spacing={0.5}>
-                {results.map((result) => (
-                  <SearchResultItem
-                    key={result.id}
-                    result={result}
-                    onClick={handleResultClick}
-                  />
-                ))}
-              </Stack>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="body2" color="text.secondary">
-                  No results found for &quot;{query}&quot;
-                </Typography>
-              </Box>
-            )
+        }}
+      >
+        <Paper sx={{ p: 0 }}>
+          {mode === 'search' ? (
+            <SearchModeContent
+              query={query}
+              onQueryChange={setQuery}
+              onSearch={handleSearch}
+              onResultClick={handleResultClick}
+              onRemoveHistoryItem={handleRemoveHistoryItem}
+              onClearHistory={handleClearHistory}
+              onHistoryToggle={handleHistoryToggle}
+              onSwitchToAIMode={handleSwitchToAIMode}
+              history={history}
+              historyEnabled={historyEnabled}
+              searchBooks={memoizedSearchBooks}
+            />
           ) : (
-            // Show recent searches
-            historyEnabled && history.length > 0 ? (
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
-                  Recent Searches
-                </Typography>
-                <Stack spacing={0.5}>
-                  {history.map((item) => (
-                    <RecentSearchItem
-                      key={item.id}
-                      item={item}
-                      onClick={handleSearch}
-                      onRemove={handleRemoveHistoryItem}
-                    />
-                  ))}
-                </Stack>
-              </Box>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <SearchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  {historyEnabled ? 'Start typing to search' : 'Search history is disabled'}
-                </Typography>
-              </Box>
-            )
+            <AIModeContent
+              onBackToSearch={handleBackToSearch}
+              isOpen={open && mode === 'ai'}
+            />
           )}
-        </Box>
-
-        <Divider />
-
-        {/* Settings at Bottom */}
-        <Box sx={{ p: 2 }}>
-          <Stack spacing={1.5}>
-            <SearchHistoryToggle enabled={historyEnabled} onChange={handleHistoryToggle} />
-            {historyEnabled && (
-              <DeleteSearchHistoryToggle
-                onDelete={handleClearHistory}
-                hasHistory={history.length > 0}
-              />
-            )}
-          </Stack>
-        </Box>
-      </Paper>
+        </Paper>
+      </Popover>
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
@@ -300,6 +239,6 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </Popover>
+    </>
   )
 }

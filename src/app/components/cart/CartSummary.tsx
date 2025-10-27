@@ -2,31 +2,45 @@
 
 import {
   Box,
-  Button,
   Card,
   CardContent,
   Divider,
   Stack,
   Typography,
 } from '@mui/material'
-import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout'
+import { CartItem } from '@/contexts/CartContext'
+import PayPalCartCheckoutButton from '@/app/components/payment/PayPalCartCheckoutButton'
+import type { PayPalPaymentItem } from '@/interfaces/payment'
 
 interface CartSummaryProps {
+  items: CartItem[]
   totalItems: number
   subtotal: number
   tax?: number
   shipping?: number
-  onCheckout: () => void
+  onCheckoutSuccess?: () => void
 }
 
 export default function CartSummary({
+  items,
   totalItems,
   subtotal,
   tax = 0,
   shipping = 0,
-  onCheckout,
+  onCheckoutSuccess,
 }: CartSummaryProps) {
   const total = subtotal + tax + shipping
+
+  // Convert CartItems to PayPalPaymentItems
+  const paypalItems: PayPalPaymentItem[] = items.map((item) => ({
+    book: {
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      currency: 'USD', // Default currency
+    },
+    quantity: item.quantity,
+  }))
 
   return (
     <Card
@@ -76,7 +90,7 @@ export default function CartSummary({
 
         <Divider sx={{ my: 2 }} />
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             Total
           </Typography>
@@ -88,26 +102,11 @@ export default function CartSummary({
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={onCheckout}
-          startIcon={<ShoppingCartCheckoutIcon />}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            py: 1.5,
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-              boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
-            },
-          }}
-        >
-          Proceed to Checkout
-        </Button>
+        <PayPalCartCheckoutButton
+          items={paypalItems}
+          disabled={items.length === 0}
+          onSuccess={onCheckoutSuccess}
+        />
       </CardContent>
     </Card>
   )

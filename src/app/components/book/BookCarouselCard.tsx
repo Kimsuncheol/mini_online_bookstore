@@ -31,7 +31,7 @@ export default function BookCarouselCard({ book, variant = 'default' }: BookCaro
         <Chip label="Featured" sx={{ alignSelf: 'flex-start', fontWeight: 600 }} />
       )}
 
-      <Link href={`/books/${book.id}`} style={{ textDecoration: 'none' }}>
+      <Link href={`/book/${book.id}`} style={{ textDecoration: 'none' }}>
         <Typography
           variant="h6"
           sx={{

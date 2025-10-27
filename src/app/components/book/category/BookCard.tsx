@@ -35,7 +35,7 @@ export default function BookCard({ book }: BookCardProps) {
         },
       }}
     >
-      <Link href={`/books/${book.id}`} style={{ textDecoration: 'none' }}>
+      <Link href={`/book/${book.id}`} style={{ textDecoration: 'none' }}>
         <CardMedia
           sx={{
             position: 'relative',
@@ -107,7 +107,7 @@ export default function BookCard({ book }: BookCardProps) {
       </Link>
 
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1, pt: 2 }}>
-        <Link href={`/books/${book.id}`} style={{ textDecoration: 'none' }}>
+        <Link href={`/book/${book.id}`} style={{ textDecoration: 'none' }}>
           <Typography
             variant="subtitle1"
             sx={{

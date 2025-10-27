@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Alert,
   Box,
@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
   alpha,
+  Snackbar,
 } from '@mui/material'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
@@ -23,7 +24,9 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt'
 import Link from 'next/link'
 import { Book } from '@/interfaces/book'
 import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
 import PayPalPaymentButton from '@/app/components/payment/PayPalPaymentButton'
+import { toggleLike, checkLikeStatus, getBookLikeCount } from '@/app/api/like'
 
 interface BookDetailProps {
   book: Book
@@ -40,8 +43,41 @@ const metaItems: Array<{ key: keyof Book; label: string }> = [
 export default function BookDetail({ book }: BookDetailProps) {
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
   const [addedToCart, setAddedToCart] = useState(false)
+  const [likeLoading, setLikeLoading] = useState(false)
+  const [showMessage, setShowMessage] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('success')
+
   const { addToCart } = useCart()
+  const { user } = useAuth()
+
+  // Check if the book is already liked by the user on component mount
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      if (user?.email) {
+        try {
+          const status = await checkLikeStatus(book.id, user.email)
+          setIsFavorite(status.isLiked)
+        } catch (error) {
+          console.error('Error fetching like status:', error)
+        }
+      }
+    }
+
+    const fetchLikeCount = async () => {
+      try {
+        const result = await getBookLikeCount(book.id)
+        setLikeCount(result.count)
+      } catch (error) {
+        console.error('Error fetching like count:', error)
+      }
+    }
+
+    fetchLikeStatus()
+    fetchLikeCount()
+  }, [book.id, user?.email])
 
   const handleQuantityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10)
@@ -50,20 +86,63 @@ export default function BookDetail({ book }: BookDetailProps) {
     }
   }
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      price: book.price,
-      image: book.coverImageUrl || book.coverImage,
-    })
-    setAddedToCart(true)
-    setTimeout(() => setAddedToCart(false), 2000)
+  const handleAddToCart = async () => {
+    try {
+      await addToCart({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        price: book.price,
+        image: book.coverImageUrl || book.coverImage,
+      })
+      setAddedToCart(true)
+      setTimeout(() => setAddedToCart(false), 2000)
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      setMessage(error instanceof Error ? error.message : 'Failed to add to cart')
+      setMessageType('error')
+      setShowMessage(true)
+    }
   }
 
-  const handleToggleFavorite = () => {
-    setIsFavorite((prev) => !prev)
+  const handleToggleFavorite = async () => {
+    if (!user?.email) {
+      setMessage('Please sign in to like books')
+      setMessageType('info')
+      setShowMessage(true)
+      return
+    }
+
+    setLikeLoading(true)
+    try {
+      const result = await toggleLike({
+        bookId: book.id,
+        title: book.title,
+        userEmail: user.email,
+        price: book.price,
+        originalPrice: book.originalPrice,
+        coverImageUrl: book.coverImageUrl,
+      })
+
+      setIsFavorite(result.isLiked)
+      setMessage(result.message)
+      setMessageType('success')
+      setShowMessage(true)
+
+      // Update like count
+      if (result.action === 'added') {
+        setLikeCount((prev) => prev + 1)
+      } else {
+        setLikeCount((prev) => Math.max(0, prev - 1))
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error)
+      setMessage(error instanceof Error ? error.message : 'Failed to update like status')
+      setMessageType('error')
+      setShowMessage(true)
+    } finally {
+      setLikeLoading(false)
+    }
   }
 
   const discountPercentage = book.originalPrice
@@ -305,6 +384,7 @@ export default function BookDetail({ book }: BookDetailProps) {
                   fullWidth
                   startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                   onClick={handleToggleFavorite}
+                  disabled={likeLoading}
                   sx={{
                     py: 1.5,
                     fontWeight: 700,
@@ -312,9 +392,14 @@ export default function BookDetail({ book }: BookDetailProps) {
                     borderRadius: 3,
                     color: isFavorite ? 'error.main' : 'text.primary',
                     borderColor: isFavorite ? 'error.main' : 'divider',
+                    '&:hover': {
+                      borderColor: 'error.main',
+                      backgroundColor: isFavorite ? alpha('#f44336', 0.04) : 'transparent',
+                    },
                   }}
                 >
                   {isFavorite ? 'Liked' : 'Like'}
+                  {likeCount > 0 && ` (${likeCount})`}
                 </Button>
               </Stack>
               <PayPalPaymentButton book={book} quantity={quantity} disabled={!book.inStock} />
@@ -364,6 +449,21 @@ export default function BookDetail({ book }: BookDetailProps) {
           </Stack>
         </Box>
       </Box>
+
+      <Snackbar
+        open={showMessage}
+        autoHideDuration={3000}
+        onClose={() => setShowMessage(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShowMessage(false)}
+          severity={messageType}
+          sx={{ width: '100%' }}
+        >
+          {message}
+        </Alert>
+      </Snackbar>
     </Container>
   )
 }
