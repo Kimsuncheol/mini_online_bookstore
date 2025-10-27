@@ -44,6 +44,21 @@ export interface Book {
 }
 
 /**
+ * Hero Carousel Book Interface
+ * Represents the data needed by the hero carousel
+ */
+export interface HeroCarouselBook {
+  id: string
+  title: string
+  author: string
+  description: string
+  price: number
+  pageCount?: number
+  originalPrice?: number
+  coverImageUrl?: string
+}
+
+/**
  * Book Filter Options Interface
  * Used for filtering books in search and browse
  */

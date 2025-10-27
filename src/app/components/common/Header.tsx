@@ -61,6 +61,11 @@ export default function Header() {
     handleMenuClose()
   }
 
+  const handleAdvertisementClick = () => {
+    router.push('/admin/advertisement')
+    handleMenuClose()
+  }
+
   return (
     <>
       <AppBar
@@ -89,6 +94,7 @@ export default function Header() {
                 onProfileClick={handleProfileClick}
                 onAuthorDashboardClick={handleAuthorDashboardClick}
                 onUserManagementClick={handleUserManagementClick}
+                onAdvertisementClick={handleAdvertisementClick}
                 onLogout={handleLogout}
               />
             ) : (

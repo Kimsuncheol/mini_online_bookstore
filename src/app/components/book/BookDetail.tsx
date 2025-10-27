@@ -23,6 +23,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt'
 import Link from 'next/link'
 import { Book } from '@/interfaces/book'
 import { useCart } from '@/contexts/CartContext'
+import PayPalPaymentButton from '@/app/components/payment/PayPalPaymentButton'
 
 interface BookDetailProps {
   book: Book
@@ -316,6 +317,7 @@ export default function BookDetail({ book }: BookDetailProps) {
                   {isFavorite ? 'Liked' : 'Like'}
                 </Button>
               </Stack>
+              <PayPalPaymentButton book={book} quantity={quantity} disabled={!book.inStock} />
             </Stack>
 
             <Divider />

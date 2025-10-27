@@ -4,6 +4,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import LogoutIcon from '@mui/icons-material/Logout'
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
 import PeopleIcon from '@mui/icons-material/People'
+import CampaignIcon from '@mui/icons-material/Campaign'
 
 type HeaderUserMenuProps = {
   user: { displayName?: string | null; email?: string | null; role?: 'admin' | 'author' | 'user' | null } | null
@@ -13,6 +14,7 @@ type HeaderUserMenuProps = {
   onProfileClick: () => void
   onAuthorDashboardClick: () => void
   onUserManagementClick: () => void
+  onAdvertisementClick: () => void
   onLogout: () => void | Promise<void>
 }
 
@@ -34,6 +36,7 @@ export default function HeaderUserMenu({
   onProfileClick,
   onAuthorDashboardClick,
   onUserManagementClick,
+  onAdvertisementClick,
   onLogout,
 }: HeaderUserMenuProps) {
   if (!user) return null
@@ -113,6 +116,12 @@ export default function HeaderUserMenu({
           sx={{ color: 'GrayText' }}
           text="User Management"
           icon={<PeopleIcon />}
+        />
+        <CustomizedMenuItem
+          onClick={onAdvertisementClick}
+          sx={{ color: 'GrayText' }}
+          text="Advertisements"
+          icon={<CampaignIcon />}
         />
         <CustomizedMenuItem
           onClick={onLogout}

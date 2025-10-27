@@ -1,11 +1,6 @@
 import { Box, Chip, Typography, alpha } from '@mui/material'
 import Link from 'next/link'
-import { Book } from '@/interfaces/book'
-
-interface BookCarouselCardProps {
-  book: Book
-  variant?: 'featured' | 'default'
-}
+import { BookCarouselCardProps } from '@/interfaces/carousel'
 
 const FALLBACK_IMAGE_BG = alpha('#0f172a', 0.06)
 
