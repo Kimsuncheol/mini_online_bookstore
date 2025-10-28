@@ -51,8 +51,8 @@ export default function Header() {
     handleMenuClose()
   }
 
-  const handleAuthorDashboardClick = () => {
-    router.push('/author/dashboard')
+  const handleAuthorDashboardClick = (userId: string) => {
+    router.push(`/author/${userId}`)
     handleMenuClose()
   }
 
@@ -102,7 +102,9 @@ export default function Header() {
                 onMenuOpen={handleMenuOpen}
                 onMenuClose={handleMenuClose}
                 onProfileClick={handleProfileClick}
-                onAuthorDashboardClick={handleAuthorDashboardClick}
+                onAuthorDashboardClick={() => {
+                  if (user.email) handleAuthorDashboardClick(user.uid)
+                }}
                 onUserManagementClick={handleUserManagementClick}
                 onAdvertisementClick={handleAdvertisementClick}
                 onPaymentHistoryClick={handlePaymentHistoryClick}

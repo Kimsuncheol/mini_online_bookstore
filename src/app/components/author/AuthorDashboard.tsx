@@ -403,7 +403,7 @@ function BookDialog({
             />
           </Stack>
 
-          <Stack spacing={1.5} id=''>
+          <Stack spacing={1.5} id="">
             <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
               Cover Image Source
             </Typography>

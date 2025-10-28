@@ -91,6 +91,7 @@ export async function signUp(
  */
 export async function getUserByEmail(email: string): Promise<Member | null> {
   try {
+    console.log('email' + email);
     const response = await fetch(
       `${API_BASE_URL}/members/email/${encodeURIComponent(email)}`,
       {

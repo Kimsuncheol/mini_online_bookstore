@@ -21,20 +21,24 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import CancelIcon from '@mui/icons-material/Cancel'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 import type { PaymentTransaction, PaymentStatus } from '@/interfaces/paymentHistory'
 
 interface PaymentTransactionItemProps {
   transaction: PaymentTransaction
   onViewDetails?: (transaction: PaymentTransaction) => void
+  onLeaveReview?: (bookId: string, bookTitle: string) => void
 }
 
 export default function PaymentTransactionItem({
   transaction,
   onViewDetails,
+  onLeaveReview,
 }: PaymentTransactionItemProps) {
   const [expanded, setExpanded] = useState(false)
 
   const statusConfig = getStatusConfig(transaction.status)
+  const isCompleted = transaction.status === 'completed'
 
   return (
     <>
@@ -144,14 +148,26 @@ export default function PaymentTransactionItem({
                     by {item.bookAuthor}
                   </Typography>
                 </Box>
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="body2">
-                    ${item.unitPrice.toFixed(2)} × {item.quantity}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    ${item.totalPrice.toFixed(2)}
-                  </Typography>
-                </Box>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-end' }}>
+                  {isCompleted && onLeaveReview && (
+                    <IconButton
+                      size="small"
+                      onClick={() => onLeaveReview(item.bookId, item.bookTitle)}
+                      color="primary"
+                      title="Leave a review"
+                    >
+                      <RateReviewIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  )}
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="body2">
+                      ${item.unitPrice.toFixed(2)} × {item.quantity}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                      ${item.totalPrice.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Stack>
               </Box>
             ))}
           </Stack>
