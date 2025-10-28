@@ -5,6 +5,8 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
 import PeopleIcon from '@mui/icons-material/People'
 import CampaignIcon from '@mui/icons-material/Campaign'
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 
 type HeaderUserMenuProps = {
   user: { displayName?: string | null; email?: string | null; role?: 'admin' | 'author' | 'user' | null } | null
@@ -15,6 +17,8 @@ type HeaderUserMenuProps = {
   onAuthorDashboardClick: () => void
   onUserManagementClick: () => void
   onAdvertisementClick: () => void
+  onPaymentHistoryClick: () => void
+  onAdminPaymentHistoryClick: () => void
   onLogout: () => void | Promise<void>
 }
 
@@ -37,6 +41,8 @@ export default function HeaderUserMenu({
   onAuthorDashboardClick,
   onUserManagementClick,
   onAdvertisementClick,
+  onPaymentHistoryClick,
+  onAdminPaymentHistoryClick,
   onLogout,
 }: HeaderUserMenuProps) {
   if (!user) return null
@@ -122,6 +128,18 @@ export default function HeaderUserMenu({
           sx={{ color: 'GrayText' }}
           text="Advertisements"
           icon={<CampaignIcon />}
+        />
+        <CustomizedMenuItem
+          onClick={onPaymentHistoryClick}
+          sx={{ color: 'GrayText' }}
+          text="Payment History"
+          icon={<ReceiptLongIcon />}
+        />
+        <CustomizedMenuItem
+          onClick={onAdminPaymentHistoryClick}
+          sx={{ color: 'GrayText' }}
+          text="Admin Payment History"
+          icon={<AdminPanelSettingsIcon />}
         />
         <CustomizedMenuItem
           onClick={onLogout}

@@ -1,4 +1,6 @@
+import { Container } from '@mui/material'
 import BookDetail from '@/app/components/book/BookDetail'
+import BookSummarySection from '@/app/components/book/BookSummarySection'
 import { getBookById } from './bookData'
 
 interface BookPageRouteParams {
@@ -28,5 +30,12 @@ export default async function BookPage({ params }: BookPageProps) {
   const { id } = await params
   const book = await getBookById(id)
 
-  return <BookDetail book={book} />
+  return (
+    <>
+      <BookDetail book={book} />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <BookSummarySection book={book} />
+      </Container>
+    </>
+  )
 }

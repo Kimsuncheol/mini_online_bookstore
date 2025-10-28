@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { AISearchMessage } from '@/interfaces/aiSearch'
 import { useAuth } from '@/contexts/AuthContext'
-import { searchWithAI } from '@/services/aiSearchService'
+import { searchWithAI, deleteConversation } from '@/services/aiSearchService'
 
 // Extended message type with recommendations and suggestions
 export interface ExtendedAISearchMessage extends AISearchMessage {
@@ -31,6 +31,25 @@ export function useAIConversation({ open }: UseAIConversationProps) {
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const conversationId = useRef<string | undefined>(undefined)
+  const userEmail = user?.email
+
+  const cleanupConversation = useCallback(async () => {
+    const activeConversationId = conversationId.current
+
+    // Clear the ref early so new sessions don't reuse the old ID
+    conversationId.current = undefined
+
+    if (!activeConversationId || !userEmail) {
+      return
+    }
+
+    try {
+      await deleteConversation(userEmail, activeConversationId)
+      console.log('Deleted chat conversation:', activeConversationId)
+    } catch (deleteError) {
+      console.error('Delete Conversation Cleanup Error:', deleteError)
+    }
+  }, [userEmail])
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -50,20 +69,27 @@ export function useAIConversation({ open }: UseAIConversationProps) {
   // Clear history automatically when modal closes
   useEffect(() => {
     if (!open) {
+      void cleanupConversation()
+
       // Reset all conversation state
       setMessages([])
       setQuery('')
       setIsLoading(false)
       setError(null)
-      conversationId.current = undefined
     }
-  }, [open])
+  }, [open, cleanupConversation])
+
+  // Ensure conversation is cleaned up if the component unmounts while still open
+  useEffect(() => {
+    return () => {
+      void cleanupConversation()
+    }
+  }, [cleanupConversation])
 
   const handleSendMessage = async () => {
     if (!query.trim() || isLoading) return
 
     // Check if user is authenticated
-    const userEmail = user?.email
     if (!userEmail) {
       const errorMessage: ExtendedAISearchMessage = {
         id: `msg_${Date.now()}_error`,

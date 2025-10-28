@@ -145,14 +145,18 @@ export async function getAnswersForQuestion(questionId: string): Promise<AISearc
 }
 
 /**
- * Fetches a conversation by ID
+ * Fetches a conversation by ID for a specific user
+ * @param userEmail - The user's email address
  * @param conversationId - The conversation ID
  * @returns The conversation with all messages
  */
-export async function getConversation(conversationId: string): Promise<AISearchConversation> {
+export async function getConversation(
+  userEmail: string,
+  conversationId: string
+): Promise<AISearchConversation> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/ai-search/conversations/${conversationId}`,
+      `${API_BASE_URL}/api/ai-search/conversations/${encodeURIComponent(userEmail)}/${encodeURIComponent(conversationId)}`,
       {
         method: 'GET',
         headers: {
@@ -162,12 +166,97 @@ export async function getConversation(conversationId: string): Promise<AISearchC
     )
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch conversation: ${response.status}`)
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(
+        errorData.detail ||
+        `Failed to fetch conversation: ${response.status} ${response.statusText}`
+      )
     }
 
     return await response.json()
   } catch (error) {
     console.error('Get Conversation Error:', error)
+    throw error
+  }
+}
+
+/**
+ * Deletes a specific conversation from user's chat history
+ * @param userEmail - The user's email address
+ * @param conversationId - The conversation ID to delete
+ * @returns Success confirmation payload (if provided by API)
+ */
+export async function deleteConversation(
+  userEmail: string,
+  conversationId: string
+): Promise<Record<string, unknown>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/ai-search/conversations/${encodeURIComponent(userEmail)}/${encodeURIComponent(conversationId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: true, message: 'Conversation not found' }
+      }
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(
+        errorData.detail ||
+        `Failed to delete conversation: ${response.status} ${response.statusText}`
+      )
+    }
+
+    if (response.status === 204) {
+      return { success: true }
+    }
+
+    return await response.json().catch(() => ({ success: true }))
+  } catch (error) {
+    console.error('Delete Conversation Error:', error)
+    throw error
+  }
+}
+
+/**
+ * Deletes all conversations for a user
+ * @param userEmail - The user's email address
+ * @returns Success confirmation payload (if provided by API)
+ */
+export async function deleteAllConversations(
+  userEmail: string
+): Promise<Record<string, unknown>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/ai-search/conversations/user/${encodeURIComponent(userEmail)}/all`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(
+        errorData.detail ||
+        `Failed to delete all conversations: ${response.status} ${response.statusText}`
+      )
+    }
+
+    if (response.status === 204) {
+      return { success: true }
+    }
+
+    return await response.json().catch(() => ({ success: true }))
+  } catch (error) {
+    console.error('Delete All Conversations Error:', error)
     throw error
   }
 }

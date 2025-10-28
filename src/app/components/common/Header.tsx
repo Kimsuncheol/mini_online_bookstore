@@ -66,6 +66,16 @@ export default function Header() {
     handleMenuClose()
   }
 
+  const handlePaymentHistoryClick = () => {
+    router.push('/payment-history')
+    handleMenuClose()
+  }
+
+  const handleAdminPaymentHistoryClick = () => {
+    router.push('/admin/payment-history')
+    handleMenuClose()
+  }
+
   return (
     <>
       <AppBar
@@ -95,6 +105,8 @@ export default function Header() {
                 onAuthorDashboardClick={handleAuthorDashboardClick}
                 onUserManagementClick={handleUserManagementClick}
                 onAdvertisementClick={handleAdvertisementClick}
+                onPaymentHistoryClick={handlePaymentHistoryClick}
+                onAdminPaymentHistoryClick={handleAdminPaymentHistoryClick}
                 onLogout={handleLogout}
               />
             ) : (
