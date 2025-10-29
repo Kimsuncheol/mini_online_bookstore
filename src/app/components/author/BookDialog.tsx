@@ -64,6 +64,24 @@ export default function BookDialog({
     event.target.value = ''
   }
 
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const files = event.dataTransfer.files
+    if (files.length === 0) return
+
+    const file = files[0]
+    if (file.type === 'application/pdf') {
+      onPdfFileSelect(file)
+    }
+  }
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 600, fontSize: '1.5rem' }}>
@@ -107,16 +125,6 @@ export default function BookDialog({
               onChange={(e) => onInputChange('price', parseFloat(e.target.value) || 0)}
               inputProps={{ step: 0.01, min: 0 }}
             />
-            <TextField
-              label="Stock Quantity *"
-              type="number"
-              fullWidth
-              value={formData.stockQuantity}
-              onChange={(e) =>
-                onInputChange('stockQuantity', Number.parseInt(e.target.value, 10) || 0)
-              }
-              inputProps={{ min: 0 }}
-            />
           </Stack>
           <Stack direction="row" spacing={2}>
             <TextField
@@ -132,22 +140,12 @@ export default function BookDialog({
               onChange={(e) => onInputChange('language', e.target.value)}
             />
           </Stack>
-          <Stack direction="row" spacing={2}>
-            <TextField
-              label="Page Count"
-              type="number"
-              fullWidth
-              value={formData.pageCount}
-              onChange={(e) => onInputChange('pageCount', Number.parseInt(e.target.value, 10) || 0)}
-              inputProps={{ min: 0 }}
-            />
-            <TextField
-              label="Publisher"
-              fullWidth
-              value={formData.publisher}
-              onChange={(e) => onInputChange('publisher', e.target.value)}
-            />
-          </Stack>
+          <TextField
+            label="Publisher"
+            fullWidth
+            value={formData.publisher}
+            onChange={(e) => onInputChange('publisher', e.target.value)}
+          />
 
           <Stack spacing={1.5}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
@@ -218,32 +216,54 @@ export default function BookDialog({
             <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
               Book PDF File
             </Typography>
-            <Button
-              component="label"
-              variant="outlined"
-              startIcon={<CloudUploadIcon />}
-              sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+            <Box
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              sx={{
+                border: '2px dashed',
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 3,
+                textAlign: 'center',
+                backgroundColor: 'action.hover',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  backgroundColor: 'action.selected',
+                },
+              }}
             >
-              Upload PDF
-              <input hidden accept=".pdf" type="file" onChange={handlePdfFileChange} />
-            </Button>
+              <Stack spacing={2} alignItems="center">
+                <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main' }} />
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Drag and drop your PDF file here
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    or use the button below to select a file
+                  </Typography>
+                </Box>
+                <Button
+                  component="label"
+                  variant="contained"
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Select PDF File
+                  <input hidden accept=".pdf" type="file" onChange={handlePdfFileChange} />
+                </Button>
+              </Stack>
+            </Box>
             {pdfFileName && (
-              <Typography variant="body2" color="text.secondary">
-                Selected file: {pdfFileName}
-              </Typography>
+              <Box sx={{ p: 2, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
+                  ✓ Selected file: {pdfFileName}
+                </Typography>
+              </Box>
             )}
           </Stack>
 
           <Stack direction="row" spacing={2}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.inStock || false}
-                  onChange={(e) => onInputChange('inStock', e.target.checked)}
-                />
-              }
-              label="In Stock"
-            />
             <FormControlLabel
               control={
                 <Switch

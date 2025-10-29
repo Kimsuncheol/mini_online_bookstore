@@ -14,14 +14,11 @@ export interface Book {
   genre: string
   language?: string
   publishedDate?: Date
-  pageCount?: number
 
   // Pricing and Availability
   price: number
   originalPrice?: number
   currency?: string
-  inStock: boolean
-  stockQuantity: number
 
   // Media
   coverImage?: string

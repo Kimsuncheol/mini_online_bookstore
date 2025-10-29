@@ -202,41 +202,6 @@ export async function searchBooks(filters: BookFilterOptions): Promise<{
 }
 
 /**
- * Update book stock
- * PATCH /api/books/{book_id}/stock
- */
-export async function updateBookStock(
-  bookId: string,
-  quantityChange: number
-): Promise<Book> {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/books/${bookId}/stock?quantity_change=${quantityChange}`,
-      {
-        method: 'PATCH',
-      }
-    )
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to update stock' }))
-      if (response.status === 404) {
-        throw new Error('Book not found')
-      }
-      if (response.status === 400) {
-        throw new Error(error.detail || 'Invalid stock quantity')
-      }
-      throw new Error('Failed to update stock')
-    }
-
-    const data = await response.json()
-    return toCamelCase(data)
-  } catch (error) {
-    console.error('Error updating stock:', error)
-    throw error
-  }
-}
-
-/**
  * Get books by genre
  * GET /api/books/genre/{genre}
  */

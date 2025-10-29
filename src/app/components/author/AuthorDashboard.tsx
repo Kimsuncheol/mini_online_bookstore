@@ -91,14 +91,14 @@ function DashboardStats({ books }: DashboardStatsProps) {
         color: 'primary.main',
       },
       {
-        label: 'In Stock',
-        value: books.filter((b) => b.inStock).length,
-        color: 'success.main',
-      },
-      {
         label: 'Featured',
         value: books.filter((b) => b.isFeatured).length,
         color: 'secondary.main',
+      },
+      {
+        label: 'New Releases',
+        value: books.filter((b) => b.isNew).length,
+        color: 'success.main',
       },
     ],
     [books]
@@ -218,9 +218,6 @@ function BooksGrid({ books, onEdit, onDelete }: BooksGridProps) {
                 </Typography>
               )}
             </Stack>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Stock: {book.stockQuantity} • {book.inStock ? 'In Stock' : 'Out of Stock'}
-            </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
               <Button
                 variant="outlined"
@@ -326,14 +323,11 @@ export default function AuthorDashboard() {
     author: '',
     genre: '',
     price: 0,
-    stockQuantity: 0,
     description: '',
     isbn: '',
     language: 'English',
-    pageCount: 0,
     publisher: '',
     coverImageUrl: '',
-    inStock: true,
     isNew: false,
     isFeatured: false,
   })
@@ -369,14 +363,11 @@ export default function AuthorDashboard() {
       author: authorName,
       genre: '',
       price: 0,
-      stockQuantity: 0,
       description: '',
       isbn: '',
       language: 'English',
-      pageCount: 0,
       publisher: '',
       coverImageUrl: '',
-      inStock: true,
       isNew: false,
       isFeatured: false,
     })
