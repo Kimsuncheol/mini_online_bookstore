@@ -12,6 +12,7 @@ import HeroBookCarousel from './HeroBookCarousel'
 import QuickActionChips, { QuickAction } from './category/QuickActionsGrid'
 import TrendingBooksSection from './category/TrendingBooksSection'
 import BookCardGrid from './category/BookCardGrid'
+import QuickAccessGrid from '../common/QuickAccessGrid'
 
 interface BookCategoryPageProps {
   category: string
@@ -88,6 +89,14 @@ export default function BookCategoryPage({
     return (
       <Stack spacing={6}>
         <HeroBookCarousel books={heroCarouselBooks} />
+
+        {/* Quick Access Section */}
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2.5 }}>
+            Quick Access
+          </Typography>
+          <QuickAccessGrid />
+        </Box>
 
         <Stack spacing={3}>
           <QuickActionChips
