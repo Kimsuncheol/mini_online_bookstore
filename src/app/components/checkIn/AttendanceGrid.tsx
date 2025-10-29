@@ -1,34 +1,30 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Box, Paper, Tooltip, useTheme, useMediaQuery } from '@mui/material'
+import { Box, Paper, Tooltip } from '@mui/material'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import type { CheckInRecord } from '@/interfaces/checkIn'
 
 interface AttendanceGridProps {
   records: CheckInRecord[] // Should be in reverse chronological order
-  maxDays?: number // Maximum days to display (default 90)
+  maxDays?: number // Maximum days to display (default 28)
 }
 
-export default function AttendanceGrid({ records, maxDays = 90 }: AttendanceGridProps) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
-
+export default function AttendanceGrid({ records, maxDays = 28 }: AttendanceGridProps) {
   // Calculate item size based on screen size
   const itemSize = useMemo(() => {
     const containerWidth = typeof window !== 'undefined' ? window.innerWidth : 1200
-    // 6 columns with padding and gap
+    // 7 columns with padding and gap
     const usableWidth = containerWidth - 32 // 16px padding on each side
     const gap = 12 // Gap between items
-    const totalGapWidth = gap * 5 // 5 gaps between 6 columns
-    const singleItemWidth = (usableWidth - totalGapWidth) / 6
+    const totalGapWidth = gap * 6 // 6 gaps between 7 columns
+    const singleItemWidth = (usableWidth - totalGapWidth) / 7
 
     // Clamp between reasonable sizes
     return Math.min(Math.max(singleItemWidth, 20), 60)
   }, [])
 
-  // Create array of last 90 days
+  // Create array of last 28 days
   const displayRecords = useMemo(() => {
     const today = new Date()
     const allDays: CheckInRecord[] = []
@@ -54,7 +50,7 @@ export default function AttendanceGrid({ records, maxDays = 90 }: AttendanceGrid
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
+        gridTemplateColumns: 'repeat(7, 1fr)',
         gap: '12px',
         p: 3,
         borderRadius: 2,
