@@ -70,11 +70,12 @@ export default function FavoriteItem({
           boxShadow: 4,
         },
         borderRadius: 2,
+        width: '100%'
       }}
     >
       {/* Book Cover Image */}
       <CardMedia
-        component="div"
+        component="img"
         sx={{
           pt: '140%',
           position: 'relative',

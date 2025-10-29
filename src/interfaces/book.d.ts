@@ -26,6 +26,8 @@ export interface Book {
   // Media
   coverImage?: string
   coverImageUrl?: string
+  pdfUrl?: string
+  pdfFileName?: string
 
   // Ratings and Reviews
   rating?: number

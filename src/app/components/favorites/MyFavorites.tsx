@@ -64,7 +64,13 @@ export default function MyFavorites() {
         const book = favorites.find((fav) => fav.bookId === bookId)
         if (!book) return
 
-        await addToCart(bookId, book.title, book.price, book.coverImageUrl || '')
+        await addToCart({
+          id: bookId,
+          title: book.title,
+          author: 'Unknown',
+          price: book.price,
+          image: book.coverImageUrl || '',
+        })
       } catch (err) {
         console.error('Error adding to cart:', err)
         setError(err instanceof Error ? err.message : 'Failed to add to cart')
@@ -138,9 +144,9 @@ export default function MyFavorites() {
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={1}>
           {favorites.map((favorite) => (
-            <Grid item xs={12} sm={6} md={6} lg={4} key={favorite.bookId}>
+            <Grid item xs={6} sm={5} md={4} lg={3} key={favorite.bookId}>
               <FavoriteItem
                 book={favorite}
                 onRemove={handleRemove}

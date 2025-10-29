@@ -15,23 +15,19 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   IconButton,
   Stack,
-  Switch,
-  TextField,
   Typography,
   alpha,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
-import SaveIcon from '@mui/icons-material/Save'
-import CancelIcon from '@mui/icons-material/Cancel'
 import AutoStoriesIcon from '@mui/icons-material/AutoStories'
 import { Book } from '@/interfaces/book'
 import { useAuth } from '@/contexts/AuthContext'
 import { createBook, deleteBook, getAllBooks, updateBook } from '@/app/api/books'
+import BookDialog from './BookDialog'
 
 interface DashboardHeaderProps {
   onAddBook: () => void
@@ -285,237 +281,6 @@ function EmptyState({ onAddBook, hidden }: EmptyStateProps) {
   )
 }
 
-interface BookDialogProps {
-  open: boolean
-  formData: Partial<Book>
-  isEditing: boolean
-  useCoverUrlInput: boolean
-  coverImageFileName: string
-  onClose: () => void
-  onSubmit: () => void
-  onInputChange: (field: keyof Book, value: string | number | boolean) => void
-  onToggleCoverSource: (useUrl: boolean) => void
-  onCoverFileSelect: (file: File | null) => void
-}
-
-function BookDialog({
-  open,
-  formData,
-  isEditing,
-  useCoverUrlInput,
-  coverImageFileName,
-  onClose,
-  onSubmit,
-  onInputChange,
-  onToggleCoverSource,
-  onCoverFileSelect,
-}: BookDialogProps) {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    onCoverFileSelect(file)
-    event.target.value = ''
-  }
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, fontSize: '1.5rem' }}>
-        {isEditing ? 'Edit Book' : 'Add New Book'}
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 2 }}>
-          <TextField
-            label="Title *"
-            fullWidth
-            value={formData.title}
-            onChange={(e) => onInputChange('title', e.target.value)}
-          />
-          <TextField
-            label="Author *"
-            fullWidth
-            value={formData.author}
-            onChange={(e) => onInputChange('author', e.target.value)}
-          />
-          <TextField
-            label="Genre *"
-            fullWidth
-            value={formData.genre}
-            onChange={(e) => onInputChange('genre', e.target.value)}
-            placeholder="e.g., Fiction, Science, History"
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={4}
-            value={formData.description}
-            onChange={(e) => onInputChange('description', e.target.value)}
-          />
-          <Stack direction="row" spacing={2}>
-            <TextField
-              label="Price *"
-              type="number"
-              fullWidth
-              value={formData.price}
-              onChange={(e) => onInputChange('price', parseFloat(e.target.value) || 0)}
-              inputProps={{ step: 0.01, min: 0 }}
-            />
-            <TextField
-              label="Stock Quantity *"
-              type="number"
-              fullWidth
-              value={formData.stockQuantity}
-              onChange={(e) =>
-                onInputChange('stockQuantity', Number.parseInt(e.target.value, 10) || 0)
-              }
-              inputProps={{ min: 0 }}
-            />
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <TextField
-              label="ISBN"
-              fullWidth
-              value={formData.isbn}
-              onChange={(e) => onInputChange('isbn', e.target.value)}
-            />
-            <TextField
-              label="Language"
-              fullWidth
-              value={formData.language}
-              onChange={(e) => onInputChange('language', e.target.value)}
-            />
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <TextField
-              label="Page Count"
-              type="number"
-              fullWidth
-              value={formData.pageCount}
-              onChange={(e) => onInputChange('pageCount', Number.parseInt(e.target.value, 10) || 0)}
-              inputProps={{ min: 0 }}
-            />
-            <TextField
-              label="Publisher"
-              fullWidth
-              value={formData.publisher}
-              onChange={(e) => onInputChange('publisher', e.target.value)}
-            />
-          </Stack>
-
-          <Stack spacing={1.5} id="">
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-              Cover Image Source
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant={useCoverUrlInput ? 'contained' : 'outlined'}
-                onClick={() => onToggleCoverSource(true)}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                Use URL
-              </Button>
-              <Button
-                variant={!useCoverUrlInput ? 'contained' : 'outlined'}
-                onClick={() => onToggleCoverSource(false)}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                Upload Image
-              </Button>
-            </Stack>
-
-            {useCoverUrlInput ? (
-              <TextField
-                label="Cover Image URL"
-                fullWidth
-                value={formData.coverImageUrl}
-                onChange={(e) => onInputChange('coverImageUrl', e.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-            ) : (
-              <Stack spacing={1}>
-                <Button
-                  component="label"
-                  variant="outlined"
-                  sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
-                >
-                  Select Image
-                  <input hidden accept="image/*" type="file" onChange={handleFileChange} />
-                </Button>
-                {coverImageFileName && (
-                  <Typography variant="body2" color="text.secondary">
-                    Selected file: {coverImageFileName}
-                  </Typography>
-                )}
-              </Stack>
-            )}
-
-            {formData.coverImageUrl && (
-              <Box
-                component="img"
-                src={formData.coverImageUrl}
-                alt="Book cover preview"
-                sx={{
-                  mt: 1,
-                  width: '100%',
-                  maxHeight: 240,
-                  objectFit: 'cover',
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                }}
-              />
-            )}
-          </Stack>
-
-          <Stack direction="row" spacing={2}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.inStock || false}
-                  onChange={(e) => onInputChange('inStock', e.target.checked)}
-                />
-              }
-              label="In Stock"
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isNew || false}
-                  onChange={(e) => onInputChange('isNew', e.target.checked)}
-                />
-              }
-              label="New Release"
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isFeatured || false}
-                  onChange={(e) => onInputChange('isFeatured', e.target.checked)}
-                />
-              }
-              label="Featured"
-            />
-          </Stack>
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} startIcon={<CancelIcon />} sx={{ textTransform: 'none', fontWeight: 600 }}>
-          Cancel
-        </Button>
-        <Button
-          onClick={onSubmit}
-          variant="contained"
-          startIcon={<SaveIcon />}
-          sx={{ textTransform: 'none', fontWeight: 600 }}
-        >
-          {isEditing ? 'Update Book' : 'Create Book'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-}
-
 interface DeleteDialogProps {
   open: boolean
   book?: Book | null
@@ -554,6 +319,7 @@ export default function AuthorDashboard() {
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null)
   const [useCoverUrlInput, setUseCoverUrlInput] = useState(true)
   const [coverImageFileName, setCoverImageFileName] = useState('')
+  const [pdfFileName, setPdfFileName] = useState('')
 
   const [formData, setFormData] = useState<Partial<Book>>({
     title: '',
@@ -616,6 +382,7 @@ export default function AuthorDashboard() {
     })
     setUseCoverUrlInput(true)
     setCoverImageFileName('')
+    setPdfFileName('')
   }
 
   const handleOpenDialog = (book?: Book) => {
@@ -624,6 +391,7 @@ export default function AuthorDashboard() {
       setFormData(book)
       setUseCoverUrlInput(Boolean(book.coverImageUrl))
       setCoverImageFileName('')
+      setPdfFileName(book.pdfFileName || '')
     } else {
       setEditingBook(null)
       resetFormState(user?.displayName || '')
@@ -636,6 +404,7 @@ export default function AuthorDashboard() {
     setEditingBook(null)
     setError(null)
     setCoverImageFileName('')
+    setPdfFileName('')
   }
 
   const handleInputChange = (field: keyof Book, value: string | number | boolean) => {
@@ -658,6 +427,23 @@ export default function AuthorDashboard() {
     reader.onloadend = () => {
       if (typeof reader.result === 'string') {
         handleInputChange('coverImageUrl', reader.result)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handlePdfFileSelect = (file: File | null) => {
+    if (!file) return
+
+    setPdfFileName(file.name)
+    handleInputChange('pdfFileName', file.name)
+
+    // Optional: You can add logic to upload the PDF file to a server
+    // For now, we're just storing the file name
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        handleInputChange('pdfUrl', reader.result)
       }
     }
     reader.readAsDataURL(file)
@@ -779,11 +565,13 @@ export default function AuthorDashboard() {
         isEditing={Boolean(editingBook)}
         useCoverUrlInput={useCoverUrlInput}
         coverImageFileName={coverImageFileName}
+        pdfFileName={pdfFileName}
         onClose={handleCloseDialog}
         onSubmit={handleSubmit}
         onInputChange={handleInputChange}
         onToggleCoverSource={handleToggleCoverSource}
         onCoverFileSelect={handleCoverFileSelect}
+        onPdfFileSelect={handlePdfFileSelect}
       />
 
       <DeleteConfirmationDialog
