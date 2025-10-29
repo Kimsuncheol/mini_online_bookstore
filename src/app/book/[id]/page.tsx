@@ -2,6 +2,7 @@ import { Container } from '@mui/material'
 import BookDetail from '@/app/components/book/BookDetail'
 import BookSummarySection from '@/app/components/book/BookSummarySection'
 import BookReviewWrapper from '@/app/components/book/BookReviewWrapper'
+import BookCouponSection from '@/app/components/book/BookCouponSection'
 import { getBookById } from './bookData'
 
 interface BookPageRouteParams {
@@ -36,6 +37,9 @@ export default async function BookPage({ params }: BookPageProps) {
       <BookDetail book={book} />
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <BookSummarySection book={book} />
+      </Container>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <BookCouponSection />
       </Container>
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <BookReviewWrapper book={book} />

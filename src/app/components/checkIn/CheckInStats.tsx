@@ -3,7 +3,7 @@
 import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import CalendarCheckIcon from '@mui/icons-material/CalendarCheck'
+import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import type { CheckInStats as CheckInStatsType } from '@/interfaces/checkIn'
 
 interface CheckInStatsProps {
@@ -29,7 +29,7 @@ export default function CheckInStats({ stats }: CheckInStatsProps) {
     {
       label: 'Total Check-ins',
       value: stats.totalCheckIns,
-      icon: <CalendarCheckIcon sx={{ fontSize: 32 }} />,
+      icon: <EventAvailableIcon sx={{ fontSize: 32 }} />,
       color: 'primary.main',
       bgColor: 'rgba(63, 81, 181, 0.1)',
     },

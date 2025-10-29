@@ -19,7 +19,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import HistoryIcon from '@mui/icons-material/History'
-import type { Coupon } from '@/interfaces/checkIn'
+import type { Coupon } from '@/interfaces/coupon'
 
 interface CouponSlotProps {
   coupons: Coupon[]
@@ -148,7 +148,7 @@ export default function CouponSlot({ coupons }: CouponSlotProps) {
                       </Box>
                       <Chip
                         label={getSourceLabel(coupon.source)}
-                        color={getSourceBadgeColor(coupon.source) as any}
+                        color={getSourceBadgeColor(coupon.source) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         size="small"
                         variant="outlined"
                       />

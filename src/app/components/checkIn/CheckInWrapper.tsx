@@ -14,16 +14,13 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import CheckInStats from './CheckInStats'
 import AttendanceGrid from './AttendanceGrid'
-import SpinWheel from './SpinWheel'
 import CouponSlot from './CouponSlot'
 import type {
   CheckInRecord,
   CheckInStats as CheckInStatsType,
-  Coupon,
-  CouponIssueRecord,
-  SpinWheelResult,
   UserCheckInProfile,
 } from '@/interfaces/checkIn'
+import type { Coupon } from '@/interfaces/coupon'
 
 const STREAK_BONUS_CONFIG = [
   { days: 7, value: 1 },
@@ -37,7 +34,6 @@ export default function CheckInWrapper() {
   const [error, setError] = useState<string | null>(null)
   const [checkInData, setCheckInData] = useState<UserCheckInProfile | null>(null)
   const [checkedInToday, setCheckedInToday] = useState(false)
-  const [spinsRemaining, setSpinsRemaining] = useState(1)
 
   // Initialize or fetch check-in data
   useEffect(() => {
@@ -79,7 +75,6 @@ export default function CheckInWrapper() {
 
       setCheckInData(profile)
       setCheckedInToday(isCheckedToday)
-      setSpinsRemaining(isCheckedToday ? 1 : 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load check-in data')
     } finally {
@@ -107,7 +102,7 @@ export default function CheckInWrapper() {
 
     let streak = 0
     const today = new Date()
-    let checkDate = new Date(today)
+    const checkDate = new Date(today)
 
     for (let i = 0; i < 365; i++) {
       const dateStr = checkDate.toISOString().split('T')[0]
@@ -142,6 +137,14 @@ export default function CheckInWrapper() {
       return []
     }
   }, [user?.uid])
+
+  // Utility: Calculate remaining days in the month
+  const getRemainingDaysInMonth = useCallback((): number => {
+    const today = new Date()
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    const remaining = lastDayOfMonth.getDate() - today.getDate()
+    return remaining
+  }, [])
 
   // Handle check-in action
   const handleCheckIn = useCallback(async () => {
@@ -187,7 +190,6 @@ export default function CheckInWrapper() {
 
       // Update state
       setCheckedInToday(true)
-      setSpinsRemaining(1)
 
       // Reload data
       await loadCheckInData()
@@ -195,29 +197,6 @@ export default function CheckInWrapper() {
       setError(err instanceof Error ? err.message : 'Failed to check in')
     }
   }, [user?.uid, checkedInToday, getStoredRecords, calculateCurrentStreak, loadCheckInData])
-
-  // Handle spin wheel result
-  const handleSpinWheelResult = useCallback(
-    (result: SpinWheelResult) => {
-      if (!user?.uid) return
-
-      try {
-        // Add coupon from spin wheel
-        const existingCoupons = getStoredCoupons()
-        const newCoupons = [...existingCoupons, result.coupon]
-        localStorage.setItem(`checkIn_coupons_${user.uid}`, JSON.stringify(newCoupons))
-
-        // Update spin remaining
-        setSpinsRemaining(0)
-
-        // Reload check-in data
-        loadCheckInData()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save spin reward')
-      }
-    },
-    [user?.uid, getStoredCoupons, loadCheckInData]
-  )
 
   if (authLoading || loading) {
     return (
@@ -246,34 +225,14 @@ export default function CheckInWrapper() {
       )}
 
       {/* Header */}
-      <Stack spacing={3} sx={{ mb: 4 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-            🎯 Daily Check-in
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Check in daily to build your streak, earn coupons, and unlock special rewards!
-          </Typography>
-        </Box>
-
-        {/* Check-in Button */}
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleCheckIn}
-          disabled={checkedInToday}
-          sx={{
-            alignSelf: 'flex-start',
-            px: 4,
-            py: 1.5,
-            borderRadius: 2,
-            fontWeight: 600,
-            textTransform: 'none',
-          }}
-        >
-          {checkedInToday ? '✓ Already checked in today' : 'Check In Today'}
-        </Button>
-      </Stack>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          🎯 Daily Check-in
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Check in daily to build your streak, earn coupons, and unlock special rewards!
+        </Typography>
+      </Box>
 
       {/* Stats Section */}
       {checkInData && (
@@ -282,32 +241,37 @@ export default function CheckInWrapper() {
           <Divider sx={{ my: 4 }} />
 
           <Stack spacing={4}>
-            {/* Attendance Grid */}
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                📅 Attendance History
-              </Typography>
-              <AttendanceGrid records={checkInData.records} maxDays={90} />
-            </Box>
+            {/* Attendance Grid - Show only if remaining days >= 7 */}
+            {getRemainingDaysInMonth() >= 7 && (
+              <>
+                <Box>
+                  {/* Header with Button on the right */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      📅 Attendance History
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={handleCheckIn}
+                      disabled={checkedInToday}
+                      sx={{
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        textTransform: 'none',
+                      }}
+                    >
+                      {checkedInToday ? '✓ Already checked in today' : 'Check In Today'}
+                    </Button>
+                  </Box>
+                  <AttendanceGrid records={checkInData.records} maxDays={28} />
+                </Box>
 
-            <Divider />
-
-            {/* Spin Wheel Section */}
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                🎡 Daily Spin Wheel
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Spin the wheel daily to win coupons worth $0.10 to $1.00!
-              </Typography>
-              <SpinWheel
-                onSpin={handleSpinWheelResult}
-                disabled={!checkedInToday}
-                spinsRemaining={spinsRemaining}
-              />
-            </Box>
-
-            <Divider />
+                <Divider />
+              </>
+            )}
 
             {/* Coupons Section */}
             <Box>

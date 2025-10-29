@@ -1,18 +1,41 @@
 'use client'
 
 import { Box, Container, Typography, CircularProgress, Alert, Snackbar } from '@mui/material'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
 import CartItems from './CartItems'
 import CartSummary from './CartSummary'
 import EmptyCart from './EmptyCart'
+import type { Coupon } from '@/interfaces/coupon'
 
 export default function Cart() {
-  const { items, totalItems, totalPrice, loading, error, updateQuantity, removeFromCart, clearCart } = useCart()
+  const { items, totalItems, totalPrice, loading, updateQuantity, removeFromCart, clearCart } = useCart()
+  const { user } = useAuth()
   const [operationLoading, setOperationLoading] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
+  const [coupons, setCoupons] = useState<Coupon[]>([])
+
+  // Fetch user coupons
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      if (user?.email) {
+        try {
+          const response = await fetch(`/api/coupons?user_email=${encodeURIComponent(user.email)}`)
+          if (response.ok) {
+            const data = await response.json()
+            setCoupons(data.coupons || [])
+          }
+        } catch (err) {
+          console.error('Failed to fetch coupons:', err)
+        }
+      }
+    }
+
+    fetchCoupons()
+  }, [user?.email])
 
   const handleQuantityUpdate = async (id: string, quantity: number) => {
     setOperationLoading(true)
@@ -97,6 +120,7 @@ export default function Cart() {
               totalItems={totalItems}
               subtotal={totalPrice}
               onCheckoutSuccess={handleCheckoutSuccess}
+              coupons={coupons}
             />
           </Box>
         </Box>

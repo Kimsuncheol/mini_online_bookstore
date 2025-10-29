@@ -10,7 +10,9 @@ import {
 } from '@mui/material'
 import { CartItem } from '@/contexts/CartContext'
 import PayPalCartCheckoutButton from '@/app/components/payment/PayPalCartCheckoutButton'
+import CouponSlot from '@/app/components/checkIn/CouponSlot'
 import type { PayPalPaymentItem } from '@/interfaces/payment'
+import type { Coupon } from '@/interfaces/coupon'
 
 interface CartSummaryProps {
   items: CartItem[]
@@ -19,6 +21,7 @@ interface CartSummaryProps {
   tax?: number
   shipping?: number
   onCheckoutSuccess?: () => void
+  coupons?: Coupon[]
 }
 
 export default function CartSummary({
@@ -28,6 +31,7 @@ export default function CartSummary({
   tax = 0,
   shipping = 0,
   onCheckoutSuccess,
+  coupons = [],
 }: CartSummaryProps) {
   const total = subtotal + tax + shipping
 
@@ -107,6 +111,13 @@ export default function CartSummary({
           disabled={items.length === 0}
           onSuccess={onCheckoutSuccess}
         />
+
+        {coupons.length > 0 && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <CouponSlot coupons={coupons} />
+          </>
+        )}
       </CardContent>
     </Card>
   )

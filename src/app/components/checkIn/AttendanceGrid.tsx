@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react'
 import { Box, Paper, Tooltip } from '@mui/material'
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import type { CheckInRecord } from '@/interfaces/checkIn'
 
 interface AttendanceGridProps {
@@ -20,8 +19,8 @@ export default function AttendanceGrid({ records, maxDays = 28 }: AttendanceGrid
     const totalGapWidth = gap * 6 // 6 gaps between 7 columns
     const singleItemWidth = (usableWidth - totalGapWidth) / 7
 
-    // Clamp between reasonable sizes
-    return Math.min(Math.max(singleItemWidth, 20), 60)
+    // Clamp between reasonable sizes - expanded from [20, 60] to [40, 80]
+    return Math.min(Math.max(singleItemWidth, 40), 80)
   }, [])
 
   // Create array of last 28 days
@@ -29,7 +28,7 @@ export default function AttendanceGrid({ records, maxDays = 28 }: AttendanceGrid
     const today = new Date()
     const allDays: CheckInRecord[] = []
 
-    for (let i = maxDays - 1; i >= 0; i--) {
+    for (let i = maxDays; i > 0; i--) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
       const dateStr = date.toISOString().split('T')[0]
@@ -44,6 +43,11 @@ export default function AttendanceGrid({ records, maxDays = 28 }: AttendanceGrid
   const getDateLabel = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00')
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const getDayNumber = (dateStr: string): number => {
+    const date = new Date(dateStr + 'T00:00:00')
+    return date.getDate()
   }
 
   return (
@@ -87,24 +91,16 @@ export default function AttendanceGrid({ records, maxDays = 28 }: AttendanceGrid
               },
             }}
           >
-            {record.checked ? (
-              <CalendarTodayIcon
-                sx={{
-                  fontSize: itemSize * 0.6,
-                  color: 'success.main',
-                }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  width: itemSize * 0.4,
-                  height: itemSize * 0.4,
-                  borderRadius: '50%',
-                  backgroundColor: 'text.disabled',
-                  opacity: 0.3,
-                }}
-              />
-            )}
+            <Box
+              sx={{
+                fontSize: itemSize * 0.5,
+                fontWeight: 700,
+                color: record.checked ? 'success.main' : 'text.disabled',
+                opacity: record.checked ? 1 : 0.5,
+              }}
+            >
+              {getDayNumber(record.date)}
+            </Box>
           </Paper>
         </Tooltip>
       ))}
