@@ -10,7 +10,6 @@ import {
 } from '@mui/material'
 import { CartItem } from '@/contexts/CartContext'
 import PayPalCartCheckoutButton from '@/app/components/payment/PayPalCartCheckoutButton'
-import CouponSlot from '@/app/components/checkIn/CouponSlot'
 import type { PayPalPaymentItem } from '@/interfaces/payment'
 import type { Coupon } from '@/interfaces/coupon'
 
@@ -110,14 +109,8 @@ export default function CartSummary({
           items={paypalItems}
           disabled={items.length === 0}
           onSuccess={onCheckoutSuccess}
+          coupons={coupons}
         />
-
-        {coupons.length > 0 && (
-          <>
-            <Divider sx={{ my: 3 }} />
-            <CouponSlot coupons={coupons} />
-          </>
-        )}
       </CardContent>
     </Card>
   )

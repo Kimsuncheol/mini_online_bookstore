@@ -4,17 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material'
 
 import { capturePayPalOrder, createPayPalOrder, createPayPalOrderPayload, loadPayPalScript } from '@/app/api/payment'
+import CompactCouponSlot from '@/app/components/checkIn/CompactCouponSlot'
 import type { PayPalApproveData, PayPalButtonsActions, PayPalButtonsOptions, PayPalPaymentItem } from '@/interfaces/payment'
+import type { Coupon } from '@/interfaces/coupon'
 
 interface PayPalCartCheckoutButtonProps {
   items: PayPalPaymentItem[]
   disabled?: boolean
   onSuccess?: () => void
+  coupons?: Coupon[]
 }
 
 type PayPalButtonStatus = 'idle' | 'loading' | 'ready' | 'processing' | 'success' | 'error'
 
-export default function PayPalCartCheckoutButton({ items, disabled, onSuccess }: PayPalCartCheckoutButtonProps) {
+export default function PayPalCartCheckoutButton({ items, disabled, onSuccess, coupons = [] }: PayPalCartCheckoutButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<PayPalButtonStatus>('loading')
   const [error, setError] = useState<string | null>(null)
@@ -150,7 +153,7 @@ export default function PayPalCartCheckoutButton({ items, disabled, onSuccess }:
   }, [status])
 
   return (
-    <Stack spacing={1.5}>
+    <Stack spacing={2}>
       <Box
         ref={containerRef}
         sx={{
@@ -171,6 +174,9 @@ export default function PayPalCartCheckoutButton({ items, disabled, onSuccess }:
         <Alert severity="success">Payment completed successfully with PayPal!</Alert>
       )}
       {error && <Alert severity="error">{error}</Alert>}
+
+      {/* Compact Coupon Slot */}
+      {coupons.length > 0 && <CompactCouponSlot coupons={coupons} />}
     </Stack>
   )
 }

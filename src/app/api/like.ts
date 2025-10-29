@@ -31,18 +31,18 @@ function toCamelCase<T>(obj: T): T {
 }
 
 /**
- * Toggle like status (add if not liked, remove if liked)
- * POST /api/likes/toggle
+ * Add a book to user's liked books
+ * POST /api/likes
+ *
+ * @param likeData - The like data to create
+ * @returns The created like information
+ * @throws Error if book is already liked or database error occurs
  */
-export async function toggleLike(likeData: Omit<Like, 'createdAt'>): Promise<{
-  action: 'added' | 'removed'
-  message: string
-  isLiked: boolean
-}> {
+export async function addLike(likeData: Omit<Like, 'id' | 'createdAt'>): Promise<Record<string, unknown>> {
   try {
     const snakeCaseData = toSnakeCase(likeData)
 
-    const response = await fetch(`${API_BASE_URL}/api/likes/toggle`, {
+    const response = await fetch(`${API_BASE_URL}/api/likes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,12 +51,83 @@ export async function toggleLike(likeData: Omit<Like, 'createdAt'>): Promise<{
     })
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to toggle like' }))
-      throw new Error(error.detail || 'Failed to toggle like')
+      const error = await response.json().catch(() => ({ detail: 'Failed to add like' }))
+      throw new Error(error.detail || 'Failed to add like')
     }
 
     const data = await response.json()
     return toCamelCase(data)
+  } catch (error) {
+    console.error('Error adding like:', error)
+    throw error
+  }
+}
+
+/**
+ * Toggle like status (add if not liked, remove if liked)
+ * POST /api/likes/toggle (with fallback to manual toggle)
+ *
+ * Convenient endpoint that automatically adds or removes a like based on current status.
+ * Falls back to manual add/remove if toggle endpoint fails.
+ *
+ * @param likeData - The like data (must include userEmail)
+ * @returns Object containing action taken ('added' or 'removed'), message, and status
+ * @throws Error if database error occurs
+ */
+export async function toggleLike(likeData: Omit<Like, 'id' | 'createdAt'>): Promise<{
+  action: 'added' | 'removed'
+  message: string
+  isLiked: boolean
+}> {
+  try {
+    // First try the dedicated toggle endpoint
+    const snakeCaseData = toSnakeCase(likeData)
+
+    // Ensure user_email is included in the request body
+    if (!snakeCaseData || typeof snakeCaseData !== 'object' || !('user_email' in snakeCaseData)) {
+      throw new Error('user_email is required for toggle like operation')
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/likes/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(snakeCaseData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return toCamelCase(data)
+      }
+
+      // If toggle endpoint fails, fall back to manual toggle
+      throw new Error('Toggle endpoint failed, using manual fallback')
+    } catch (toggleError) {
+      // Fallback: Check current status and manually add or remove
+      console.warn('Toggle endpoint failed, using manual fallback:', toggleError)
+
+      const status = await checkLikeStatus(likeData.bookId, likeData.userEmail)
+
+      if (status.isLiked) {
+        // Remove the like
+        await removeLikeByBookAndUser(likeData.bookId, likeData.userEmail)
+        return {
+          action: 'removed',
+          message: 'Removed from favorites',
+          isLiked: false,
+        }
+      } else {
+        // Add the like
+        await addLike(likeData)
+        return {
+          action: 'added',
+          message: 'Added to favorites',
+          isLiked: true,
+        }
+      }
+    }
   } catch (error) {
     console.error('Error toggling like:', error)
     throw error
@@ -234,12 +305,21 @@ export async function removeLikeByBookAndUser(
 /**
  * Get a like by its ID
  * GET /api/likes/{like_id}
+ *
+ * @param likeId - The unique identifier of the like
+ * @param userEmail - The user's email address
+ * @returns The like data
+ * @throws Error if like not found or database error occurs
  */
-export async function getLike(likeId: string): Promise<Like> {
+export async function getLike(likeId: string, userEmail: string): Promise<Record<string, unknown>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/likes/${encodeURIComponent(likeId)}`, {
-      cache: 'no-store',
-    })
+    const params = new URLSearchParams({ user_email: userEmail })
+    const response = await fetch(
+      `${API_BASE_URL}/api/likes/${encodeURIComponent(likeId)}?${params.toString()}`,
+      {
+        cache: 'no-store',
+      }
+    )
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -259,12 +339,21 @@ export async function getLike(likeId: string): Promise<Like> {
 /**
  * Remove a like by its ID
  * DELETE /api/likes/{like_id}
+ *
+ * @param likeId - The ID of the like to remove
+ * @param userEmail - The user's email address
+ * @returns Confirmation message
+ * @throws Error if like not found or database error occurs
  */
-export async function removeLike(likeId: string): Promise<{ message: string }> {
+export async function removeLike(likeId: string, userEmail: string): Promise<Record<string, unknown>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/likes/${encodeURIComponent(likeId)}`, {
-      method: 'DELETE',
-    })
+    const params = new URLSearchParams({ user_email: userEmail })
+    const response = await fetch(
+      `${API_BASE_URL}/api/likes/${encodeURIComponent(likeId)}?${params.toString()}`,
+      {
+        method: 'DELETE',
+      }
+    )
 
     if (!response.ok) {
       if (response.status === 404) {
