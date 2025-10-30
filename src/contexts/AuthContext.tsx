@@ -9,10 +9,12 @@ import {
   logOut,
   onAuthStateChangeListener,
 } from '@/lib/firebase-auth'
+import { getUserInfo, type MemberProfile } from '@/app/api/members'
 
 interface AuthContextType {
   user: User | null
   displayName: string
+  userProfile: MemberProfile | null
   loading: boolean
   error: string | null
   signInWithEmail: (email: string) => Promise<void>
@@ -27,6 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [displayName, setDisplayName] = useState<string>('')
+  const [userProfile, setUserProfile] = useState<MemberProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,10 +51,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(authUser)
       setDisplayName(deriveDisplayName(authUser))
       setLoading(false)
+
+      // Fetch user profile if user is logged in
+      if (authUser?.email) {
+        fetchUserProfile(authUser.email)
+      } else {
+        setUserProfile(null)
+      }
     })
 
     return () => unsubscribe()
   }, [])
+
+  const fetchUserProfile = async (email: string) => {
+    try {
+      const profile = await getUserInfo(email)
+      setUserProfile(profile)
+    } catch (err) {
+      console.error('Error fetching user profile:', err)
+      setUserProfile(null)
+    }
+  }
 
   const handleError = (err: unknown): string => {
     if (err instanceof Error) {
@@ -134,6 +154,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         user,
         displayName,
+        userProfile,
         loading,
         error,
         signInWithEmail,

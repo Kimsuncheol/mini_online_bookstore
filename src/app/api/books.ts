@@ -38,6 +38,8 @@ export async function createBook(bookData: Partial<Book>): Promise<Book> {
   try {
     const snakeCaseData = toSnakeCase(bookData)
 
+    console.log('bookData: ' + bookData.genre)
+
     const response = await fetch(`${API_BASE_URL}/api/books`, {
       method: 'POST',
       headers: {

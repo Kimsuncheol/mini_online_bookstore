@@ -19,6 +19,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import ErrorIcon from '@mui/icons-material/Error'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { Book } from '@/interfaces/book'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -37,6 +38,7 @@ interface BookDialogProps {
   onPdfFileSelect?: (file: File | null) => void
 }
 
+
 export default function BookDialog({
   open,
   formData,
@@ -51,22 +53,33 @@ export default function BookDialog({
   onCoverFileSelect,
   onPdfFileSelect = () => {},
 }: BookDialogProps) {
-  const { displayName } = useAuth()
+  const { displayName, userProfile } = useAuth()
   const [isDragActive, setIsDragActive] = useState(false)
   const [dragActiveSection, setDragActiveSection] = useState<'cover' | 'pdf' | null>(null)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [autoFilledTitle, setAutoFilledTitle] = useState<string | null>(null)
+
+  // Get the user's full name from profile or display name
+  const userFullName = userProfile?.name || userProfile?.displayName || displayName
 
   useEffect(() => {
-    if (!isEditing && displayName && (!formData.author || formData.author.trim() === '')) {
-      onInputChange('author', displayName)
+    if (!isEditing && userFullName && (!formData.author || formData.author.trim() === '')) {
+      onInputChange('author', userFullName)
     }
-  }, [isEditing, displayName, formData.author, onInputChange])
+  }, [isEditing, userFullName, formData.author, onInputChange])
 
   useEffect(() => {
     if (!open) {
       setIsDragActive(false)
+      setAutoFilledTitle(null)
     }
   }, [open])
+
+  useEffect(() => {
+    if (autoFilledTitle && formData.title && formData.title !== autoFilledTitle) {
+      setAutoFilledTitle(null)
+    }
+  }, [autoFilledTitle, formData.title])
 
   const validateForm = (): boolean => {
     const errors: string[] = []
@@ -99,7 +112,10 @@ export default function BookDialog({
       const derivedTitle = deriveTitleFromFileName(file.name)
       if (derivedTitle) {
         onInputChange('title', derivedTitle)
+        setAutoFilledTitle(derivedTitle)
       }
+    } else {
+      setAutoFilledTitle(null)
     }
   }
 
@@ -239,6 +255,18 @@ export default function BookDialog({
     }
   }
 
+  const handleRemoveCoverImage = () => {
+    onCoverFileSelect(null)
+  }
+
+  const handleRemovePdfFile = () => {
+    onPdfFileSelect(null)
+    if (autoFilledTitle && (formData.title || '').trim() === autoFilledTitle) {
+      onInputChange('title', '')
+    }
+    setAutoFilledTitle(null)
+  }
+
   return (
     <Dialog
       open={open}
@@ -298,7 +326,7 @@ export default function BookDialog({
             fullWidth
             value={formData.author}
             onChange={(e) => onInputChange('author', e.target.value)}
-            helperText={displayName ? 'Auto-filled from your profile' : undefined}
+            helperText={userFullName ? 'Auto-filled from your profile' : undefined}
           />
           <TextField
             label="Genre *"
@@ -419,10 +447,20 @@ export default function BookDialog({
             )}
 
             {coverImageFileName && !useCoverUrlInput && (
-              <Box sx={{ p: 1.5, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ p: 1.5, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
                   ✓ Selected file: {coverImageFileName}
                 </Typography>
+                <Button
+                  size="small"
+                  variant="text"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleRemoveCoverImage}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Remove
+                </Button>
               </Box>
             )}
 
@@ -490,10 +528,20 @@ export default function BookDialog({
               </Stack>
             </Box>
             {pdfFileName && (
-              <Box sx={{ p: 1.5, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ p: 1.5, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
                   ✓ Selected file: {pdfFileName}
                 </Typography>
+                <Button
+                  size="small"
+                  variant="text"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleRemovePdfFile}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Remove
+                </Button>
               </Box>
             )}
           </Stack>

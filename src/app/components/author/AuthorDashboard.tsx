@@ -410,7 +410,11 @@ export default function AuthorDashboard() {
   }
 
   const handleCoverFileSelect = (file: File | null) => {
-    if (!file) return
+    if (!file) {
+      setCoverImageFileName('')
+      handleInputChange('coverImageUrl', '')
+      return
+    }
 
     setCoverImageFileName(file.name)
 
@@ -424,7 +428,12 @@ export default function AuthorDashboard() {
   }
 
   const handlePdfFileSelect = (file: File | null) => {
-    if (!file) return
+    if (!file) {
+      setPdfFileName('')
+      handleInputChange('pdfFileName', '')
+      handleInputChange('pdfUrl', '')
+      return
+    }
 
     setPdfFileName(file.name)
     handleInputChange('pdfFileName', file.name)
