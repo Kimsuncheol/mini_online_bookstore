@@ -317,6 +317,8 @@ export default function AuthorDashboard() {
   const [useCoverUrlInput, setUseCoverUrlInput] = useState(true)
   const [coverImageFileName, setCoverImageFileName] = useState('')
   const [pdfFileName, setPdfFileName] = useState('')
+  const [generateSummary, setGenerateSummary] = useState(true)
+  const [regenerateSummary, setRegenerateSummary] = useState(false)
 
   const [formData, setFormData] = useState<Partial<Book>>({
     title: '',
@@ -374,6 +376,8 @@ export default function AuthorDashboard() {
     setUseCoverUrlInput(true)
     setCoverImageFileName('')
     setPdfFileName('')
+    setGenerateSummary(true)
+    setRegenerateSummary(false)
   }
 
   const handleOpenDialog = (book?: Book) => {
@@ -383,6 +387,8 @@ export default function AuthorDashboard() {
       setUseCoverUrlInput(Boolean(book.coverImageUrl))
       setCoverImageFileName('')
       setPdfFileName(book.pdfFileName || '')
+      setGenerateSummary(false)
+      setRegenerateSummary(false)
     } else {
       setEditingBook(null)
       resetFormState(user?.displayName || '')
@@ -396,6 +402,8 @@ export default function AuthorDashboard() {
     setError(null)
     setCoverImageFileName('')
     setPdfFileName('')
+    setGenerateSummary(true)
+    setRegenerateSummary(false)
   }
 
   const handleInputChange = (field: keyof Book, value: string | number | boolean) => {
@@ -459,11 +467,15 @@ export default function AuthorDashboard() {
       }
 
       if (editingBook && editingBook.id) {
-        const updated = await updateBook(editingBook.id, formData)
+        const updated = await updateBook(editingBook.id, formData, {
+          regenerateSummary: regenerateSummary ? true : undefined,
+        })
         setBooks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
         setSuccess('Book updated successfully!')
       } else {
-        const newBook = await createBook(formData)
+        const newBook = await createBook(formData, {
+          generateSummary,
+        })
         setBooks((prev) => [newBook, ...prev])
         setSuccess('Book created successfully!')
       }
@@ -571,6 +583,10 @@ export default function AuthorDashboard() {
         onToggleCoverSource={handleToggleCoverSource}
         onCoverFileSelect={handleCoverFileSelect}
         onPdfFileSelect={handlePdfFileSelect}
+        generateSummary={generateSummary}
+        regenerateSummary={regenerateSummary}
+        onGenerateSummaryChange={setGenerateSummary}
+        onRegenerateSummaryChange={setRegenerateSummary}
       />
 
       <DeleteConfirmationDialog

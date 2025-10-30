@@ -36,6 +36,10 @@ interface BookDialogProps {
   onToggleCoverSource: (useUrl: boolean) => void
   onCoverFileSelect: (file: File | null) => void
   onPdfFileSelect?: (file: File | null) => void
+  generateSummary?: boolean
+  regenerateSummary?: boolean
+  onGenerateSummaryChange?: (value: boolean) => void
+  onRegenerateSummaryChange?: (value: boolean) => void
 }
 
 
@@ -52,12 +56,17 @@ export default function BookDialog({
   onToggleCoverSource,
   onCoverFileSelect,
   onPdfFileSelect = () => {},
+  generateSummary = true,
+  regenerateSummary = false,
+  onGenerateSummaryChange = () => {},
+  onRegenerateSummaryChange = () => {},
 }: BookDialogProps) {
   const { displayName, userProfile } = useAuth()
   const [isDragActive, setIsDragActive] = useState(false)
   const [dragActiveSection, setDragActiveSection] = useState<'cover' | 'pdf' | null>(null)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [autoFilledTitle, setAutoFilledTitle] = useState<string | null>(null)
+  const isInStock = formData.inStock ?? (formData.stockQuantity ?? 0) > 0
 
   // Get the user's full name from profile or display name
   const userFullName = userProfile?.name || userProfile?.displayName || displayName
@@ -67,6 +76,14 @@ export default function BookDialog({
       onInputChange('author', userFullName)
     }
   }, [isEditing, userFullName, formData.author, onInputChange])
+
+  useEffect(() => {
+    if (!open) return
+    if (formData.stockQuantity === undefined) {
+      onInputChange('stockQuantity', 0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   useEffect(() => {
     if (!open) {
@@ -93,8 +110,13 @@ export default function BookDialog({
     if (!formData.genre || formData.genre.trim() === '') {
       errors.push('Genre is required')
     }
-    if (formData.price === undefined || formData.price === null) {
-      errors.push('Price is required')
+    if (formData.price === undefined || formData.price === null || Number(formData.price) <= 0) {
+      errors.push('Price must be greater than 0')
+    }
+    if (formData.stockQuantity === undefined || formData.stockQuantity === null) {
+      errors.push('Stock quantity is required')
+    } else if (formData.stockQuantity < 0) {
+      errors.push('Stock quantity cannot be negative')
     }
 
     setValidationErrors(errors)
@@ -343,14 +365,29 @@ export default function BookDialog({
             value={formData.description}
             onChange={(e) => onInputChange('description', e.target.value)}
           />
-          <Stack direction="row" spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               label="Price *"
               type="number"
               fullWidth
               value={formData.price}
-              onChange={(e) => onInputChange('price', parseFloat(e.target.value) || 0)}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value)
+                onInputChange('price', Number.isNaN(value) ? 0 : Math.max(0, value))
+              }}
               inputProps={{ step: 0.01, min: 0 }}
+            />
+            <TextField
+              label="Stock Quantity *"
+              type="number"
+              fullWidth
+              value={formData.stockQuantity ?? 0}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10)
+                onInputChange('stockQuantity', Number.isNaN(value) ? 0 : Math.max(0, value))
+              }}
+              inputProps={{ min: 0 }}
+              helperText="Set to 0 if the book is temporarily unavailable"
             />
           </Stack>
           <Stack direction="row" spacing={2}>
@@ -454,10 +491,9 @@ export default function BookDialog({
                 <Button
                   size="small"
                   variant="text"
-                  color="error"
                   startIcon={<DeleteIcon />}
                   onClick={handleRemoveCoverImage}
-                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                  sx={{ textTransform: 'none', fontWeight: 600, backgroundColor: 'red', color: 'white' }}
                 >
                   Remove
                 </Button>
@@ -535,10 +571,9 @@ export default function BookDialog({
                 <Button
                   size="small"
                   variant="text"
-                  color="error"
                   startIcon={<DeleteIcon />}
                   onClick={handleRemovePdfFile}
-                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                  sx={{ textTransform: 'none', fontWeight: 600, backgroundColor: 'red', color: 'white' }}
                 >
                   Remove
                 </Button>
@@ -546,7 +581,58 @@ export default function BookDialog({
             )}
           </Stack>
 
-          <Stack direction="row" spacing={2}>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+              AI Summary
+            </Typography>
+            {!isEditing ? (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={generateSummary}
+                    onChange={(e) => onGenerateSummaryChange(e.target.checked)}
+                  />
+                }
+                label="Generate AI summary automatically"
+              />
+            ) : (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={regenerateSummary}
+                    onChange={(e) => onRegenerateSummaryChange(e.target.checked)}
+                  />
+                }
+                label="Regenerate AI summary after saving"
+              />
+            )}
+            <Typography variant="caption" color="text.secondary">
+              {isEditing
+                ? 'When enabled, the AI summary will be refreshed to reflect your latest updates.'
+                : 'Keep enabled to let BookNest create an AI-powered summary once the book is saved.'}
+            </Typography>
+          </Stack>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isInStock}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    onInputChange('inStock', checked)
+                    const currentStock = formData.stockQuantity ?? 0
+                    if (!checked && currentStock > 0) {
+                      onInputChange('stockQuantity', 0)
+                    }
+                    if (checked && currentStock === 0) {
+                      onInputChange('stockQuantity', 1)
+                    }
+                  }}
+                />
+              }
+              label="In Stock"
+            />
             <FormControlLabel
               control={
                 <Switch

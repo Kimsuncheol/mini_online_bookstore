@@ -1,9 +1,11 @@
 'use client'
 
-import { Box, Paper, Typography, Skeleton, Chip, Stack } from '@mui/material'
+import { useEffect, useMemo, useState } from 'react'
+import { Box, Paper, Typography, Skeleton, Chip, Stack, Divider } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
-import type { Book } from '@/interfaces/book'
+import type { Book, BookSummary } from '@/interfaces/book'
+import { getBookSummary } from '@/app/api/books'
 
 interface BookSummarySectionProps {
   book: Book
@@ -12,8 +14,79 @@ interface BookSummarySectionProps {
 }
 
 export default function BookSummarySection({ book, summary, isLoading = false }: BookSummarySectionProps) {
-  // Generate a default summary if none provided
-  const displaySummary = summary || generateDefaultSummary(book)
+  const [aiSummary, setAiSummary] = useState<BookSummary | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState<boolean>(!summary)
+
+  useEffect(() => {
+    let isActive = true
+
+    if (!book?.id || summary) {
+      setAiSummary(null)
+      setLoadingSummary(false)
+      return
+    }
+
+    setLoadingSummary(true)
+
+    void getBookSummary(book.id)
+      .then((data) => {
+        if (!isActive) return
+        setAiSummary(data)
+      })
+      .catch((err) => {
+        if (!isActive) return
+        console.error('Failed to load AI book summary:', err)
+        setAiSummary(null)
+      })
+      .finally(() => {
+        if (!isActive) return
+        setLoadingSummary(false)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [book?.id, summary])
+
+  const primarySummary = useMemo(() => {
+    if (summary) return summary
+    if (aiSummary?.shortSummary) return aiSummary.shortSummary
+    if (aiSummary?.detailedSummary) return aiSummary.detailedSummary
+    return generateDefaultSummary(book)
+  }, [aiSummary, book, summary])
+
+  const detailedSummary = useMemo(() => {
+    if (summary) return null
+    if (!aiSummary?.detailedSummary) return null
+    if (aiSummary.shortSummary && aiSummary.shortSummary === aiSummary.detailedSummary) {
+      return null
+    }
+    return aiSummary.detailedSummary
+  }, [aiSummary, summary])
+
+  const targetAudienceChips = useMemo(() => {
+    if (!aiSummary?.targetAudience) return []
+    const segments = aiSummary.targetAudience
+      .split(/[,;•]|(?:\band\b)/i)
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+
+    return segments.length > 1 ? segments : []
+  }, [aiSummary?.targetAudience])
+
+  const showAiBadge = Boolean(summary || aiSummary)
+  const isSummaryLoading = isLoading || loadingSummary
+
+  const chipGroups = useMemo(
+    () =>
+      [
+        { label: 'Key Themes', items: aiSummary?.keyThemes },
+        { label: 'Mood & Tone', items: aiSummary?.moodTags },
+        { label: 'Content Warnings', items: aiSummary?.contentWarnings },
+        { label: 'Similar Book Tags', items: aiSummary?.similarBooksTags },
+      ].filter((group) => (group.items?.length ?? 0) > 0),
+    [aiSummary]
+  )
 
   return (
     <Paper
@@ -52,26 +125,108 @@ export default function BookSummarySection({ book, summary, isLoading = false }:
       </Stack>
 
       {/* Summary Content */}
-      {isLoading ? (
+      {isSummaryLoading ? (
         <Box>
           <Skeleton variant="text" width="100%" height={30} />
           <Skeleton variant="text" width="95%" height={30} />
           <Skeleton variant="text" width="90%" height={30} />
         </Box>
       ) : (
-        <>
+        <Stack spacing={2.5}>
           <Typography
             variant="body1"
             sx={{
               lineHeight: 1.8,
               color: 'text.primary',
-              mb: 2.5,
             }}
           >
-            {displaySummary}
+            {primarySummary}
           </Typography>
 
-          {/* Key Info Chips */}
+          {detailedSummary && (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+              {detailedSummary}
+            </Typography>
+          )}
+
+          {aiSummary?.whyReadThis && (
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Why you&apos;ll love it
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {aiSummary.whyReadThis}
+              </Typography>
+            </Box>
+          )}
+
+          {aiSummary?.targetAudience && (
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Ideal for
+              </Typography>
+              {targetAudienceChips.length > 1 ? (
+                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                  {targetAudienceChips.map((item) => (
+                    <Chip key={item} label={item} size="small" variant="outlined" sx={{ fontWeight: 500 }} />
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {aiSummary.targetAudience}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {chipGroups.map((group) => (
+            <Box key={group.label}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {group.label}
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                {group.items?.map((item) => (
+                  <Chip
+                    key={item}
+                    label={item}
+                    size="small"
+                    variant={group.label === 'Content Warnings' ? 'outlined' : 'filled'}
+                    color={group.label === 'Content Warnings' ? 'warning' : 'default'}
+                    sx={{ fontWeight: 500 }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ))}
+
+          {(aiSummary?.readingLevel ||
+            typeof aiSummary?.aiConfidenceScore === 'number' ||
+            aiSummary?.generatedByModel) && (
+            <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+              {aiSummary?.readingLevel && (
+                <Chip label={`Reading Level: ${aiSummary.readingLevel}`} size="small" variant="outlined" />
+              )}
+              {typeof aiSummary?.aiConfidenceScore === 'number' && (
+                <Chip
+                  label={`AI Confidence ${(aiSummary.aiConfidenceScore * 100).toFixed(0)}%`}
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                />
+              )}
+              {aiSummary?.generatedByModel && (
+                <Chip
+                  label={`Model: ${aiSummary.generatedByModel}`}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontWeight: 500 }}
+                />
+              )}
+            </Stack>
+          )}
+
+          <Divider sx={{ borderStyle: 'dashed', borderColor: 'divider' }} />
+
           <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
             {book.genre && (
               <Chip
@@ -109,11 +264,11 @@ export default function BookSummarySection({ book, summary, isLoading = false }:
               />
             )}
           </Stack>
-        </>
+        </Stack>
       )}
 
       {/* AI Badge */}
-      {summary && (
+      {showAiBadge && (
         <Box
           sx={{
             display: 'flex',
