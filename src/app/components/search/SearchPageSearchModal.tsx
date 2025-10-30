@@ -27,21 +27,21 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import ConfirmDialog from '../common/dialogs/ConfirmDialog'
 import SearchModeContent from './SearchModeContent'
-import AIModeContent from './AIModeContent'
+import SearchPageAIModal from './SearchPageAIModal'
 
-type SearchModalMode = 'search' | 'ai'
+type SearchPageSearchModalMode = 'search' | 'ai'
 
-interface SearchModalProps {
+interface SearchPageSearchModalProps {
   open: boolean
   onClose: () => void
   anchorEl: HTMLElement | null
+  onSearch: (query: string) => void
 }
 
 /**
  * Search books using the API
- * Falls back to local storage if API fails
  */
-async function searchBooks(query: string, userEmail?: string): Promise<SearchResult[]> {
+async function searchBooksAPI(query: string, userEmail?: string): Promise<SearchResult[]> {
   if (!query.trim()) return []
 
   try {
@@ -60,16 +60,20 @@ async function searchBooks(query: string, userEmail?: string): Promise<SearchRes
       url: item.url || `/${item.type}s/${item.id}`,
     }))
   } catch (error) {
-    console.error('API search failed, using fallback:', error)
-    // Fallback to local search results
+    console.error('API search failed:', error)
     return []
   }
 }
 
-export default function SearchModal({ open, onClose, anchorEl }: SearchModalProps) {
+export default function SearchPageSearchModal({
+  open,
+  onClose,
+  anchorEl,
+  onSearch,
+}: SearchPageSearchModalProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [mode, setMode] = useState<SearchModalMode>('search')
+  const [mode, setMode] = useState<SearchPageSearchModalMode>('search')
   const [query, setQuery] = useState('')
   const [history, setHistory] = useState<SearchHistoryItem[]>([])
   const [historyEnabled, setHistoryEnabled] = useState(true)
@@ -83,11 +87,9 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
   useEffect(() => {
     const loadHistory = async () => {
       if (open) {
-        // If user is logged in, fetch from API, otherwise use localStorage
         if (user?.email) {
           try {
             const apiHistory = await apiGetSearchHistory(user.email)
-            // Convert API history format to local format
             const formattedHistory: SearchHistoryItem[] = apiHistory.map((item) => ({
               id: item.id,
               query: item.query,
@@ -96,7 +98,6 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
             setHistory(formattedHistory)
           } catch (error) {
             console.error('Failed to fetch search history from API:', error)
-            // Fallback to localStorage
             setHistory(getLocalSearchHistory())
           }
         } else {
@@ -109,7 +110,7 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
     loadHistory()
   }, [open, user])
 
-  // Reset mode and query when modal opens (not during close to avoid width jump)
+  // Reset mode and query when modal opens
   useEffect(() => {
     if (open) {
       setMode('search')
@@ -127,7 +128,7 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
       }
 
       try {
-        const results = await searchBooks(query, user?.email || undefined)
+        const results = await searchBooksAPI(query, user?.email || undefined)
         setSearchResults(results)
       } catch (error) {
         console.error('Error fetching search results:', error)
@@ -135,7 +136,6 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
       }
     }
 
-    // Debounce search
     const timer = setTimeout(fetchResults, 300)
     return () => clearTimeout(timer)
   }, [query, user])
@@ -143,17 +143,15 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
   const handleSearch = (searchQuery: string) => {
     if (!searchQuery.trim()) return
 
-    // Add to search history
     addToLocalSearchHistory(searchQuery)
 
-    // Navigate to search page with URL parameters
     const params = new URLSearchParams({
       SearchTarget: 'all',
       SearchWord: searchQuery,
     })
     router.push(`/search?${params.toString()}`)
 
-    // Close the modal
+    onSearch(searchQuery)
     onClose()
   }
 
@@ -176,7 +174,6 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
 
   const handleConfirmClearHistory = async () => {
     try {
-      // If user is logged in, clear from API, otherwise use localStorage
       if (user?.email) {
         await apiClearSearchHistory(user.email)
       } else {
@@ -218,19 +215,11 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
     setMode('search')
   }
 
-  const handleClose = () => {
-    // Don't reset mode here to avoid width jump during closing animation
-    // Mode will be reset when modal opens again
-    onClose()
-  }
-
-  // Synchronous wrapper for search results that are already fetched
   const syncSearchBooks = (q: string): SearchResult[] => {
     if (!q.trim()) return []
     return searchResults
   }
 
-  // Dynamic styling based on mode
   const popoverStyles = mode === 'ai'
     ? {
         borderRadius: 3,
@@ -252,7 +241,7 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
       <Popover
         open={open}
         anchorEl={anchorEl}
-        onClose={handleClose}
+        onClose={onClose}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'left',
@@ -285,7 +274,7 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
               searchBooks={syncSearchBooks}
             />
           ) : (
-            <AIModeContent
+            <SearchPageAIModal
               onBackToSearch={handleBackToSearch}
               isOpen={open && mode === 'ai'}
             />
@@ -293,7 +282,6 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
         </Paper>
       </Popover>
 
-      {/* Confirm Delete Dialog */}
       <ConfirmDialog
         open={confirmDeleteOpen}
         title="Clear Search History"
@@ -305,7 +293,6 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
         danger
       />
 
-      {/* Success Snackbar */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}

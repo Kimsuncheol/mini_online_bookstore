@@ -12,6 +12,7 @@ import {
 
 interface AuthContextType {
   user: User | null
+  displayName: string
   loading: boolean
   error: string | null
   signInWithEmail: (email: string) => Promise<void>
@@ -25,13 +26,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [displayName, setDisplayName] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const deriveDisplayName = (authUser: User | null): string => {
+    if (!authUser) {
+      return ''
+    }
+    const name = authUser.displayName?.trim()
+    if (name) {
+      return name
+    }
+    const emailLocalPart = authUser.email?.split('@')[0]
+    return emailLocalPart ?? ''
+  }
 
   // Listen to auth state changes on mount
   useEffect(() => {
     const unsubscribe = onAuthStateChangeListener((authUser) => {
       setUser(authUser)
+      setDisplayName(deriveDisplayName(authUser))
       setLoading(false)
     })
 
@@ -64,6 +79,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null)
     try {
       const user = await completeEmailSignIn(email)
+      setUser(user)
+      setDisplayName(deriveDisplayName(user))
       return user
     } catch (err) {
       const errorMsg = handleError(err)
@@ -80,6 +97,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null)
     try {
       const user = await signInWithGooglePopup()
+      setUser(user)
+      setDisplayName(deriveDisplayName(user))
       return user
     } catch (err) {
       const errorMsg = handleError(err)
@@ -95,6 +114,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null)
     try {
       await logOut()
+      setUser(null)
+      setDisplayName('')
     } catch (err) {
       const errorMsg = handleError(err)
       setError(errorMsg)
@@ -112,6 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         user,
+        displayName,
         loading,
         error,
         signInWithEmail,

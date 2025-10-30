@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Box,
   Button,
@@ -18,6 +18,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import { Book } from '@/interfaces/book'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface BookDialogProps {
   open: boolean
@@ -48,6 +49,36 @@ export default function BookDialog({
   onCoverFileSelect,
   onPdfFileSelect = () => {},
 }: BookDialogProps) {
+  const { displayName } = useAuth()
+  const [isDragActive, setIsDragActive] = useState(false)
+
+  useEffect(() => {
+    if (!isEditing && displayName && (!formData.author || formData.author.trim() === '')) {
+      onInputChange('author', displayName)
+    }
+  }, [isEditing, displayName, formData.author, onInputChange])
+
+  useEffect(() => {
+    if (!open) {
+      setIsDragActive(false)
+    }
+  }, [open])
+
+  const deriveTitleFromFileName = (fileName: string): string => {
+    const withoutExtension = fileName.replace(/\.[^/.]+$/, '')
+    const withSpaces = withoutExtension.replace(/[_-]+/g, ' ')
+    return withSpaces.replace(/\s+/g, ' ').trim()
+  }
+
+  const autoFillTitleFromFile = (file: File) => {
+    if (!formData.title || formData.title.trim() === '') {
+      const derivedTitle = deriveTitleFromFileName(file.name)
+      if (derivedTitle) {
+        onInputChange('title', derivedTitle)
+      }
+    }
+  }
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -61,17 +92,38 @@ export default function BookDialog({
     if (!file) return
 
     onPdfFileSelect(file)
+    autoFillTitleFromFile(file)
     event.target.value = ''
   }
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnter = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault()
     event.stopPropagation()
+    setIsDragActive(true)
   }
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault()
     event.stopPropagation()
+    if (!isDragActive) {
+      setIsDragActive(true)
+    }
+  }
+
+  const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const relatedTarget = event.relatedTarget as Node | null
+    if (relatedTarget && event.currentTarget.contains(relatedTarget)) {
+      return
+    }
+    setIsDragActive(false)
+  }
+
+  const handleDrop = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDragActive(false)
 
     const files = event.dataTransfer.files
     if (files.length === 0) return
@@ -79,15 +131,45 @@ export default function BookDialog({
     const file = files[0]
     if (file.type === 'application/pdf') {
       onPdfFileSelect(file)
+      autoFillTitleFromFile(file)
+    } else if (file.type.startsWith('image/')) {
+      onCoverFileSelect(file)
     }
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        onDragEnter: handleDragEnter,
+        onDragOver: handleDragOver,
+        onDragLeave: handleDragLeave,
+        onDrop: handleDrop,
+        sx: {
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          outline: isDragActive ? '2px dashed' : 'none',
+          outlineColor: isDragActive ? 'primary.main' : undefined,
+          outlineOffset: isDragActive ? '6px' : undefined,
+          transition: 'outline-color 0.2s ease',
+        },
+      }}
+    >
       <DialogTitle sx={{ fontWeight: 600, fontSize: '1.5rem' }}>
         {isEditing ? 'Edit Book' : 'Add New Book'}
       </DialogTitle>
-      <DialogContent>
+      <DialogContent
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          backgroundColor: isDragActive ? 'action.hover' : 'background.paper',
+          transition: 'background-color 0.2s ease-in-out',
+        }}
+      >
         <Stack spacing={3} sx={{ mt: 2 }}>
           <TextField
             label="Title *"
@@ -100,6 +182,7 @@ export default function BookDialog({
             fullWidth
             value={formData.author}
             onChange={(e) => onInputChange('author', e.target.value)}
+            helperText={displayName ? 'Auto-filled from your profile' : undefined}
           />
           <TextField
             label="Genre *"
@@ -217,15 +300,17 @@ export default function BookDialog({
               Book PDF File
             </Typography>
             <Box
+              onDragEnter={handleDragEnter}
               onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               sx={{
                 border: '2px dashed',
-                borderColor: 'divider',
+                borderColor: isDragActive ? 'primary.main' : 'divider',
                 borderRadius: 2,
                 p: 3,
                 textAlign: 'center',
-                backgroundColor: 'action.hover',
+                backgroundColor: isDragActive ? 'action.selected' : 'action.hover',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 '&:hover': {

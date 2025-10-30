@@ -3,79 +3,39 @@
  * Handles all search-related API calls
  */
 
+import type {
+  SearchRequest,
+  SearchResultItem,
+  SearchResponse,
+  SearchHistoryItem,
+  PopularSearch,
+} from '@/interfaces/search'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
-/**
- * Search request payload
- */
-export interface SearchRequest {
-  query: string
-  search_type?: 'all' | 'books' | 'authors' | 'categories'
-  page?: number
-  page_size?: number
-  user_id?: string
-}
-
-/**
- * Search result item
- */
-export interface SearchResultItem {
-  id: string
-  title: string
-  type: 'book' | 'author' | 'category'
-  subtitle?: string
-  description?: string
-  image?: string
-  url?: string
-  score?: number
-}
-
-/**
- * Search response
- */
-export interface SearchResponse {
-  query: string
-  results: SearchResultItem[]
-  suggestions?: string[]
-  total: number
-  page: number
-  page_size: number
-  has_more: boolean
-}
-
-/**
- * Search history item
- */
-export interface SearchHistoryItem {
-  id: string
-  query: string
-  search_type?: string
-  timestamp: string
-  result_count?: number
-}
-
-/**
- * Popular search item
- */
-export interface PopularSearch {
-  query: string
-  count: number
+// Re-export types for convenience
+export type {
+  SearchRequest,
+  SearchResultItem,
+  SearchResponse,
+  SearchHistoryItem,
+  PopularSearch,
 }
 
 /**
  * Utility function to convert snake_case to camelCase
  */
-function toCamelCase(obj: any): any {
+function toCamelCase<T>(obj: T): T {
   if (Array.isArray(obj)) {
-    return obj.map(toCamelCase)
+    return obj.map(toCamelCase) as T
   }
 
-  if (obj !== null && obj.constructor === Object) {
+  if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const camelKey = key.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
-      result[camelKey] = toCamelCase(obj[key])
+      result[camelKey] = toCamelCase((obj as Record<string, unknown>)[key])
       return result
-    }, {} as any)
+    }, {} as Record<string, unknown>) as T
   }
 
   return obj
@@ -110,10 +70,10 @@ export async function searchBooks(request: SearchRequest): Promise<SearchRespons
 
 /**
  * Get search history for a user
- * GET /api/search/history/{user_id}
+ * GET /api/search/history/{user_email}
  */
 export async function getSearchHistory(
-  userId: string,
+  userEmail: string,
   limit?: number
 ): Promise<SearchHistoryItem[]> {
   try {
@@ -121,7 +81,7 @@ export async function getSearchHistory(
     if (limit) params.append('limit', limit.toString())
 
     const response = await fetch(
-      `${API_BASE_URL}/api/search/history/${userId}?${params.toString()}`,
+      `${API_BASE_URL}/api/search/history/${encodeURIComponent(userEmail)}?${params.toString()}`,
       {
         method: 'GET',
       }
@@ -142,12 +102,12 @@ export async function getSearchHistory(
 
 /**
  * Clear search history for a user
- * DELETE /api/search/history/{user_id}
+ * DELETE /api/search/history/{user_email}
  */
-export async function clearSearchHistory(userId: string): Promise<{ message: string }> {
+export async function clearSearchHistory(userEmail: string): Promise<{ message: string }> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/search/history/${userId}`,
+      `${API_BASE_URL}/api/search/history/${encodeURIComponent(userEmail)}`,
       {
         method: 'DELETE',
       }
@@ -170,7 +130,7 @@ export async function clearSearchHistory(userId: string): Promise<{ message: str
  * Get popular searches
  * GET /api/search/popular
  */
-export async function getPopularSearches(limit?: number): Promise<PopularSearch[]> {
+export async function getPopularSearches(limit?: number): Promise<Record<string, unknown>> {
   try {
     const params = new URLSearchParams()
     if (limit) params.append('limit', limit.toString())
@@ -199,7 +159,7 @@ export async function getPopularSearches(limit?: number): Promise<PopularSearch[
  * Get related search suggestions for a book
  * GET /api/search/suggestions/related/{book_id}
  */
-export async function getRelatedSearches(bookId: string): Promise<string[]> {
+export async function getRelatedSearches(bookId: string): Promise<Record<string, unknown>> {
   try {
     const response = await fetch(
       `${API_BASE_URL}/api/search/suggestions/related/${bookId}`,
