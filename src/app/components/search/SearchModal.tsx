@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Popover,
   Paper,
@@ -17,6 +17,11 @@ import {
   getSearchSettings,
   saveSearchSettings,
 } from '@/services/searchHistoryService'
+import {
+  searchBooks as apiSearchBooks,
+  type SearchResultItem,
+  type SearchResponse,
+} from '@/app/api/search'
 import ConfirmDialog from '../common/dialogs/ConfirmDialog'
 import SearchModeContent from './SearchModeContent'
 import AIModeContent from './AIModeContent'
@@ -29,40 +34,32 @@ interface SearchModalProps {
   anchorEl: HTMLElement | null
 }
 
-// Mock search function - replace with real API call
-function searchBooks(query: string): SearchResult[] {
+/**
+ * Search books using the API
+ * Falls back to local storage if API fails
+ */
+async function searchBooks(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return []
 
-  // Mock data
-  const mockResults: SearchResult[] = [
-    {
-      id: '1',
-      title: 'The Great Gatsby',
-      type: 'book',
-      subtitle: 'F. Scott Fitzgerald',
-      url: '/books/1',
-    },
-    {
-      id: '2',
-      title: 'F. Scott Fitzgerald',
-      type: 'author',
-      subtitle: '12 books',
-      url: '/authors/fitzgerald',
-    },
-    {
-      id: '3',
-      title: 'Classic Fiction',
-      type: 'category',
-      subtitle: '234 books',
-      url: '/books/fiction',
-    },
-  ]
+  try {
+    const response: SearchResponse = await apiSearchBooks({
+      query,
+      search_type: 'all',
+      page_size: 10,
+    })
 
-  return mockResults.filter(
-    (item) =>
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.subtitle?.toLowerCase().includes(query.toLowerCase())
-  )
+    return response.results.map((item: SearchResultItem) => ({
+      id: item.id,
+      title: item.title,
+      type: item.type,
+      subtitle: item.subtitle || item.description,
+      url: item.url || `/${item.type}s/${item.id}`,
+    }))
+  } catch (error) {
+    console.error('API search failed, using fallback:', error)
+    // Fallback to local search results
+    return []
+  }
 }
 
 export default function SearchModal({ open, onClose, anchorEl }: SearchModalProps) {
@@ -74,6 +71,8 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [aiKeywordsEnabled, setAIKeywordsEnabled] = useState(true)
 
   // Load history and settings on mount
   useEffect(() => {
@@ -89,8 +88,31 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
     if (open) {
       setMode('search')
       setQuery('')
+      setSearchResults([])
     }
   }, [open])
+
+  // Fetch search results when query changes
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!query.trim()) {
+        setSearchResults([])
+        return
+      }
+
+      try {
+        const results = await searchBooks(query)
+        setSearchResults(results)
+      } catch (error) {
+        console.error('Error fetching search results:', error)
+        setSearchResults([])
+      }
+    }
+
+    // Debounce search
+    const timer = setTimeout(fetchResults, 300)
+    return () => clearTimeout(timer)
+  }, [query])
 
   const handleSearch = (searchQuery: string) => {
     if (!searchQuery.trim()) return
@@ -148,8 +170,11 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
     onClose()
   }
 
-  // Memoize searchBooks to prevent recreating on each render
-  const memoizedSearchBooks = useCallback(searchBooks, [])
+  // Synchronous wrapper for search results that are already fetched
+  const syncSearchBooks = (q: string): SearchResult[] => {
+    if (!q.trim()) return []
+    return searchResults
+  }
 
   // Dynamic styling based on mode
   const popoverStyles = mode === 'ai'
@@ -198,10 +223,12 @@ export default function SearchModal({ open, onClose, anchorEl }: SearchModalProp
               onRemoveHistoryItem={handleRemoveHistoryItem}
               onClearHistory={handleClearHistory}
               onHistoryToggle={handleHistoryToggle}
+              onAIKeywordsToggle={setAIKeywordsEnabled}
               onSwitchToAIMode={handleSwitchToAIMode}
               history={history}
               historyEnabled={historyEnabled}
-              searchBooks={memoizedSearchBooks}
+              aiKeywordsEnabled={aiKeywordsEnabled}
+              searchBooks={syncSearchBooks}
             />
           ) : (
             <AIModeContent

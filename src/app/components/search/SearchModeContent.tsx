@@ -18,6 +18,8 @@ import RecentSearchItem from './RecentSearchItem'
 import SearchResultItem from './SearchResultItem'
 import SearchHistoryToggle from './SearchHistoryToggle'
 import DeleteSearchHistoryToggle from './DeleteSearchHistoryToggle'
+import AIKeywordToggle from './AIKeywordToggle'
+import AIKeywordSuggestions from './ai/AIKeywordSuggestions'
 
 interface SearchModeContentProps {
   query: string
@@ -28,8 +30,10 @@ interface SearchModeContentProps {
   onClearHistory: () => void
   onHistoryToggle: (enabled: boolean) => void
   onSwitchToAIMode: () => void
+  onAIKeywordsToggle: (enabled: boolean) => void
   history: SearchHistoryItem[]
   historyEnabled: boolean
+  aiKeywordsEnabled: boolean
   searchBooks: (query: string) => SearchResult[]
 }
 
@@ -41,9 +45,11 @@ export default function SearchModeContent({
   onRemoveHistoryItem,
   onClearHistory,
   onHistoryToggle,
+  onAIKeywordsToggle,
   onSwitchToAIMode,
   history,
   historyEnabled,
+  aiKeywordsEnabled,
   searchBooks,
 }: SearchModeContentProps) {
   const results = useMemo(() => searchBooks(query), [query, searchBooks])
@@ -133,31 +139,30 @@ export default function SearchModeContent({
             </Box>
           )
         ) : (
-          // Show recent searches
-          historyEnabled && history.length > 0 ? (
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
-                Recent Searches
-              </Typography>
-              <Stack spacing={0.5}>
-                {history.map((item) => (
-                  <RecentSearchItem
-                    key={item.id}
-                    item={item}
-                    onClick={onSearch}
-                    onRemove={onRemoveHistoryItem}
-                  />
-                ))}
-              </Stack>
-            </Box>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <SearchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-              <Typography variant="body2" color="text.secondary">
-                {historyEnabled ? 'Start typing to search' : 'Search history is disabled'}
-              </Typography>
-            </Box>
-          )
+          // Show recent searches or suggestions
+          <>
+            {historyEnabled && history.length > 0 ? (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
+                  Recent Searches
+                </Typography>
+                <Stack spacing={0.5}>
+                  {history.map((item) => (
+                    <RecentSearchItem
+                      key={item.id}
+                      item={item}
+                      onClick={onSearch}
+                      onRemove={onRemoveHistoryItem}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            ) : null}
+            {/* AI Keyword Suggestions */}
+            {aiKeywordsEnabled && (
+              <AIKeywordSuggestions onSuggestionClick={onSearch} />
+            )}
+          </>
         )}
       </Box>
 
@@ -173,6 +178,7 @@ export default function SearchModeContent({
               hasHistory={history.length > 0}
             />
           )}
+          <AIKeywordToggle enabled={aiKeywordsEnabled} onChange={onAIKeywordsToggle} />
         </Stack>
       </Box>
     </>
