@@ -444,7 +444,6 @@ export default function AuthorDashboard() {
     try {
       setError(null)
       setSuccess(null)
-
       if (!formData.title || !formData.author || !formData.genre || !formData.price) {
         setError('Please fill in all required fields (Title, Author, Genre, Price)')
         return

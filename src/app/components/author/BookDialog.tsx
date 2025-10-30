@@ -13,10 +13,12 @@ import {
   Switch,
   TextField,
   Typography,
+  Alert,
 } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import CancelIcon from '@mui/icons-material/Cancel'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import ErrorIcon from '@mui/icons-material/Error'
 import { Book } from '@/interfaces/book'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -51,6 +53,8 @@ export default function BookDialog({
 }: BookDialogProps) {
   const { displayName } = useAuth()
   const [isDragActive, setIsDragActive] = useState(false)
+  const [dragActiveSection, setDragActiveSection] = useState<'cover' | 'pdf' | null>(null)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   useEffect(() => {
     if (!isEditing && displayName && (!formData.author || formData.author.trim() === '')) {
@@ -63,6 +67,26 @@ export default function BookDialog({
       setIsDragActive(false)
     }
   }, [open])
+
+  const validateForm = (): boolean => {
+    const errors: string[] = []
+
+    if (!formData.title || formData.title.trim() === '') {
+      errors.push('Title is required')
+    }
+    if (!formData.author || formData.author.trim() === '') {
+      errors.push('Author is required')
+    }
+    if (!formData.genre || formData.genre.trim() === '') {
+      errors.push('Genre is required')
+    }
+    if (formData.price === undefined || formData.price === null) {
+      errors.push('Price is required')
+    }
+
+    setValidationErrors(errors)
+    return errors.length === 0
+  }
 
   const deriveTitleFromFileName = (fileName: string): string => {
     const withoutExtension = fileName.replace(/\.[^/.]+$/, '')
@@ -124,6 +148,7 @@ export default function BookDialog({
     event.preventDefault()
     event.stopPropagation()
     setIsDragActive(false)
+    setDragActiveSection(null)
 
     const files = event.dataTransfer.files
     if (files.length === 0) return
@@ -134,6 +159,83 @@ export default function BookDialog({
       autoFillTitleFromFile(file)
     } else if (file.type.startsWith('image/')) {
       onCoverFileSelect(file)
+    }
+  }
+
+  const handleFormSubmit = () => {
+    if (validateForm()) {
+      onSubmit()
+    }
+  }
+
+  const handleCoverDragEnter = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragActiveSection('cover')
+  }
+
+  const handleCoverDragOver = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  const handleCoverDragLeave = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const relatedTarget = event.relatedTarget as Node | null
+    if (relatedTarget && event.currentTarget.contains(relatedTarget)) {
+      return
+    }
+    setDragActiveSection(null)
+  }
+
+  const handleCoverDrop = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragActiveSection(null)
+
+    const files = event.dataTransfer.files
+    if (files.length === 0) return
+
+    const file = files[0]
+    if (file.type.startsWith('image/')) {
+      onCoverFileSelect(file)
+    }
+  }
+
+  const handlePdfDragEnter = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragActiveSection('pdf')
+  }
+
+  const handlePdfDragOver = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  const handlePdfDragLeave = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const relatedTarget = event.relatedTarget as Node | null
+    if (relatedTarget && event.currentTarget.contains(relatedTarget)) {
+      return
+    }
+    setDragActiveSection(null)
+  }
+
+  const handlePdfDrop = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragActiveSection(null)
+
+    const files = event.dataTransfer.files
+    if (files.length === 0) return
+
+    const file = files[0]
+    if (file.type === 'application/pdf') {
+      onPdfFileSelect(file)
+      autoFillTitleFromFile(file)
     }
   }
 
@@ -171,6 +273,20 @@ export default function BookDialog({
         }}
       >
         <Stack spacing={3} sx={{ mt: 2 }}>
+          {validationErrors.length > 0 && (
+            <Alert severity="error" icon={<ErrorIcon />}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Please fix the following errors:
+              </Typography>
+              <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                {validationErrors.map((error, index) => (
+                  <li key={index} style={{ marginBottom: '4px' }}>
+                    <Typography variant="body2">{error}</Typography>
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          )}
           <TextField
             label="Title *"
             fullWidth
@@ -260,21 +376,54 @@ export default function BookDialog({
                 placeholder="https://example.com/image.jpg"
               />
             ) : (
-              <Stack spacing={1}>
-                <Button
-                  component="label"
-                  variant="outlined"
-                  sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
-                >
-                  Select Image
-                  <input hidden accept="image/*" type="file" onChange={handleFileChange} />
-                </Button>
-                {coverImageFileName && (
-                  <Typography variant="body2" color="text.secondary">
-                    Selected file: {coverImageFileName}
-                  </Typography>
-                )}
-              </Stack>
+              <Box
+                onDragEnter={handleCoverDragEnter}
+                onDragOver={handleCoverDragOver}
+                onDragLeave={handleCoverDragLeave}
+                onDrop={handleCoverDrop}
+                sx={{
+                  border: '2px dashed',
+                  borderColor: dragActiveSection === 'cover' ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  p: 3,
+                  textAlign: 'center',
+                  backgroundColor: dragActiveSection === 'cover' ? 'action.selected' : 'action.hover',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    backgroundColor: 'action.selected',
+                  },
+                }}
+              >
+                <Stack spacing={1.5} alignItems="center">
+                  <CloudUploadIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Drag cover image here
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      or use button below
+                    </Typography>
+                  </Box>
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                  >
+                    Select Image
+                    <input hidden accept="image/*" type="file" onChange={handleFileChange} />
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+
+            {coverImageFileName && !useCoverUrlInput && (
+              <Box sx={{ p: 1.5, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
+                  ✓ Selected file: {coverImageFileName}
+                </Typography>
+              </Box>
             )}
 
             {formData.coverImageUrl && (
@@ -300,17 +449,17 @@ export default function BookDialog({
               Book PDF File
             </Typography>
             <Box
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+              onDragEnter={handlePdfDragEnter}
+              onDragOver={handlePdfDragOver}
+              onDragLeave={handlePdfDragLeave}
+              onDrop={handlePdfDrop}
               sx={{
                 border: '2px dashed',
-                borderColor: isDragActive ? 'primary.main' : 'divider',
+                borderColor: dragActiveSection === 'pdf' ? 'primary.main' : 'divider',
                 borderRadius: 2,
-                p: 3,
+                p: 2,
                 textAlign: 'center',
-                backgroundColor: isDragActive ? 'action.selected' : 'action.hover',
+                backgroundColor: dragActiveSection === 'pdf' ? 'action.selected' : 'action.hover',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 '&:hover': {
@@ -319,28 +468,29 @@ export default function BookDialog({
                 },
               }}
             >
-              <Stack spacing={2} alignItems="center">
-                <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main' }} />
+              <Stack spacing={1.5} alignItems="center">
+                <CloudUploadIcon sx={{ fontSize: 32, color: 'primary.main' }} />
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    Drag and drop your PDF file here
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Drag PDF file here
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    or use the button below to select a file
+                  <Typography variant="caption" color="text.secondary">
+                    or select using button
                   </Typography>
                 </Box>
                 <Button
                   component="label"
-                  variant="contained"
+                  variant="outlined"
+                  size="small"
                   sx={{ textTransform: 'none', fontWeight: 600 }}
                 >
-                  Select PDF File
+                  Select PDF
                   <input hidden accept=".pdf" type="file" onChange={handlePdfFileChange} />
                 </Button>
               </Stack>
             </Box>
             {pdfFileName && (
-              <Box sx={{ p: 2, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ p: 1.5, backgroundColor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
                   ✓ Selected file: {pdfFileName}
                 </Typography>
@@ -375,7 +525,7 @@ export default function BookDialog({
           Cancel
         </Button>
         <Button
-          onClick={onSubmit}
+          onClick={handleFormSubmit}
           variant="contained"
           startIcon={<SaveIcon />}
           sx={{ textTransform: 'none', fontWeight: 600 }}
